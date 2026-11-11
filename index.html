@@ -122,14 +122,32 @@
         .sync-online { background-color: #c6f6d5; color: #22543d; }
         .sync-loading { background-color: #feebc8; color: #744210; }
 
-        /* Estilo idéntico a Google Sheets (Cuadriculado, centrado y profesional fijo) */
+        /* Panel de Indicadores (Dashboard) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            border-left: 4px solid #3182ce;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stat-card.green { border-left-color: #38a169; }
+        .stat-card.purple { border-left-color: #805ad5; }
+        .stat-title { font-size: 0.8rem; color: #718096; font-weight: bold; text-transform: uppercase; }
+        .stat-value { font-size: 1.4rem; color: #2d3748; font-weight: bold; margin-top: 5px; }
+
+        /* Estilo tipo Google Sheets (Cuadriculado, centrado y profesional fijo) */
         table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: #ffffff; }
         th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; }
         th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; }
         tr:nth-child(even) { background-color: #fdfdfd; }
         tr:hover { background-color: #f1f5f9; }
 
-        /* Clases específicas para asegurar anchos y formatos intactos */
         .td-codigo { white-space: nowrap; text-align: center; }
         .td-texto { min-width: 180px; text-align: center; }
         .td-corto { width: 50px; text-align: center; }
@@ -176,6 +194,22 @@
         </div>
 
         <div class="container">
+            <!-- PANEL DE INDICADORES (DASHBOARD) -->
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-title">Total Alumnos Atendidos</div>
+                    <div class="stat-value" id="statTotalAlumnos">0</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-title">Total Personal Adscrito</div>
+                    <div class="stat-value" id="statTotalPersonal">0</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-title">Última Sincronización</div>
+                    <div class="stat-value" id="statUltimaSinc" style="font-size: 1rem; margin-top: 8px;">Pendiente</div>
+                </div>
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <div>
                     <button class="btn btn-sync" onclick="sincronizarTodo()">🔄 Sincronizar Todo con Google Sheets</button>
@@ -222,7 +256,7 @@
                 </div>
             </div>
 
-            <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL -->
+            <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL (CON CAMPOS AMPLIADOS FUNCIONALES) -->
             <div id="personalSection" class="tab-content" style="display: none;">
                 <div class="card">
                     <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo</h3>
@@ -242,6 +276,7 @@
                                     <th>Filiación</th>
                                     <th>Sexo</th>
                                     <th>Clave CURP</th>
+                                    <th>Nombramiento / Plaza</th>
                                     <th>DEP</th>
                                     <th>Unid</th>
                                     <th>Sub Unid</th>
@@ -257,8 +292,8 @@
                                     <th>Horario</th>
                                     <th>Estado Civil</th>
                                     <th>Domicilio Particular</th>
-                                    <th>Teléfono</th>
-                                    <th>E-Mail</th>
+                                    <th>Teléfono / Celular</th>
+                                    <th>E-Mail Institucional</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -365,9 +400,18 @@
 
             renderAlumnos();
             renderPersonal();
+            actualizarEstadisticas();
 
             badge.textContent = "Sheets Conectados";
             badge.className = "sync-status sync-online";
+
+            const ahora = new Date();
+            document.getElementById('statUltimaSinc').textContent = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function actualizarEstadisticas() {
+            document.getElementById('statTotalAlumnos').textContent = dbAlumnos.length;
+            document.getElementById('statTotalPersonal').textContent = dbPersonal.length;
         }
 
         function formatearFecha(valor) {
@@ -518,7 +562,7 @@
             });
 
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="27" style="text-align:center; color:#718096; white-space: normal;">No hay personal registrado que coincida con la búsqueda.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="28" style="text-align:center; color:#718096; white-space: normal;">No hay personal registrado que coincida con la búsqueda.</td></tr>`;
                 return;
             }
 
@@ -534,6 +578,7 @@
                 const filiacon = obtenerValorCampo(p, ['filiacion', 'filiación']);
                 const sexo = obtenerValorCampo(p, ['sexo']);
                 const curp = obtenerValorCampo(p, ['clave curp', 'curp']);
+                const nombramiento = obtenerValorCampo(p, ['nombramiento', 'tipo de plaza', 'sostenimiento']) || 'Base';
                 const dep = obtenerValorCampo(p, ['dep']);
                 const unid = obtenerValorCampo(p, ['unid']);
                 const subUnid = obtenerValorCampo(p, ['sub unid']);
@@ -551,7 +596,7 @@
                 const horario = obtenerValorCampo(p, ['horario']);
                 const estadoCivil = obtenerValorCampo(p, ['estado civil']);
                 const domicilio = obtenerValorCampo(p, ['domicilio particular', 'domicilio']);
-                const telefono = obtenerValorCampo(p, ['telefono', 'teléfono']);
+                const telefono = obtenerValorCampo(p, ['telefono', 'teléfono', 'celular']);
                 const email = obtenerValorCampo(p, ['e-mail', 'correo', 'email']);
                 const status = (obtenerValorCampo(p, ['status', 'estado']) || 'SI').toUpperCase();
 
@@ -566,6 +611,7 @@
                         <td class="td-codigo">${filiacon || 'N/A'}</td>
                         <td class="td-corto">${sexo || 'N/A'}</td>
                         <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
+                        <td class="td-texto">${nombramiento}</td>
                         <td class="td-corto">${dep || 'N/A'}</td>
                         <td class="td-corto">${unid || 'N/A'}</td>
                         <td class="td-corto">${subUnid || 'N/A'}</td>
