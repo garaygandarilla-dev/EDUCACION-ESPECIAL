@@ -122,17 +122,15 @@
         .sync-online { background-color: #c6f6d5; color: #22543d; }
         .sync-loading { background-color: #feebc8; color: #744210; }
 
-        /* Estilos de tablas amplias y adaptables sin compresión */
+        /* Estilos de tablas amplias con formato de texto centrado */
         table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; }
-        th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; vertical-align: middle; white-space: nowrap; }
-        th { background-color: #edf2f7; color: #2d3748; text-align: center; font-weight: bold; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: center; vertical-align: middle; white-space: nowrap; }
+        th { background-color: #edf2f7; color: #2d3748; font-weight: bold; }
         tr:nth-child(even) { background-color: #f7fafc; }
 
-        /* Clase para permitir wrap ordenado solo en textos largos de la plantilla */
-        .td-wrap { white-space: normal; min-width: 200px; max-width: 300px; word-break: break-word; }
-        .td-codigo { white-space: nowrap; }
-
-        .col-center { text-align: center; }
+        /* Clases auxiliares para textos largos con ajuste centrado */
+        .td-wrap { white-space: normal; min-width: 200px; max-width: 300px; word-break: break-word; text-align: center; }
+        .td-codigo { white-space: nowrap; text-align: center; }
 
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
@@ -203,15 +201,15 @@
                                     <th>Grado/T</th>
                                     <th>Nombre del alumno</th>
                                     <th>CURP</th>
-                                    <th class="col-center">Sexo</th>
-                                    <th class="col-center">D</th>
-                                    <th class="col-center">M</th>
-                                    <th class="col-center">A</th>
-                                    <th class="col-center">I</th>
-                                    <th class="col-center">F</th>
+                                    <th>Sexo</th>
+                                    <th>D</th>
+                                    <th>M</th>
+                                    <th>A</th>
+                                    <th>I</th>
+                                    <th>F</th>
                                     <th>Condición</th>
-                                    <th class="col-center">S.F</th>
-                                    <th class="col-center">P/NP</th>
+                                    <th>S.F</th>
+                                    <th>P/NP</th>
                                     <th>Nombre de la Escuela</th>
                                     <th>Maestro(a) de Apoyo</th>
                                 </tr>
@@ -240,7 +238,7 @@
                                     <th>Apellido Materno</th>
                                     <th>Nombre(s)</th>
                                     <th>Filiación</th>
-                                    <th class="col-center">Sexo</th>
+                                    <th>Sexo</th>
                                     <th>Clave CURP</th>
                                     <th>DEP</th>
                                     <th>Unid</th>
@@ -259,7 +257,7 @@
                                     <th>Domicilio Particular</th>
                                     <th>Teléfono</th>
                                     <th>E-Mail</th>
-                                    <th class="col-center">Status</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaPersonal"></tbody>
@@ -480,23 +478,23 @@
 
                 htmlAcumulado += `
                     <tr>
-                        <td class="col-center">${idx + 1}</td>
+                        <td>${idx + 1}</td>
                         <td>${zona || 'N/A'}</td>
                         <td>${centro || 'N/A'}</td>
                         <td class="td-codigo">${clave || 'N/A'}</td>
                         <td>${nivel || 'N/A'}</td>
                         <td>${gradoTaller || 'N/A'}</td>
                         <td><strong>${nombreAlumno || 'N/A'}</strong></td>
-                        <td class="td-codigo">${curp || 'N/A'}</td>
-                        <td class="col-center">${sexo || 'N/A'}</td>
-                        <td class="col-center">${d || ''}</td>
-                        <td class="col-center">${m || ''}</td>
-                        <td class="col-center">${a || ''}</td>
-                        <td class="col-center">${i || ''}</td>
-                        <td class="col-center">${f || ''}</td>
+                        <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
+                        <td>${sexo || 'N/A'}</td>
+                        <td>${d || ''}</td>
+                        <td>${m || ''}</td>
+                        <td>${a || ''}</td>
+                        <td>${i || ''}</td>
+                        <td>${f || ''}</td>
                         <td>${condicion || 'N/A'}</td>
-                        <td class="col-center">${sf || ''}</td>
-                        <td class="col-center">${pnp || ''}</td>
+                        <td>${sf || ''}</td>
+                        <td>${pnp || ''}</td>
                         <td>${nombreEscuela || 'N/A'}</td>
                         <td>${maestroApoyo || 'N/A'}</td>
                     </tr>
@@ -557,37 +555,37 @@
 
                 htmlAcumulado += `
                     <tr>
-                        <td class="col-center">${idx + 1}</td>
+                        <td>${idx + 1}</td>
                         <td>${zona || 'N/A'}</td>
                         <td><div class="td-wrap">${nombreCentro || 'N/A'}</div></td>
                         <td><strong>${apPaterno || 'N/A'}</strong></td>
                         <td><strong>${apMaterno || 'N/A'}</strong></td>
                         <td><strong>${nombreDocente || 'N/A'}</strong></td>
                         <td class="td-codigo">${filiacon || 'N/A'}</td>
-                        <td class="col-center">${sexo || 'N/A'}</td>
+                        <td>${sexo || 'N/A'}</td>
                         <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
-                        <td class="col-center">${dep || 'N/A'}</td>
-                        <td class="col-center">${unid || 'N/A'}</td>
-                        <td class="col-center">${subUnid || 'N/A'}</td>
+                        <td>${dep || 'N/A'}</td>
+                        <td>${unid || 'N/A'}</td>
+                        <td>${subUnid || 'N/A'}</td>
                         <td>${categ || 'N/A'}</td>
-                        <td class="col-center">${hrs || 'N/A'}</td>
+                        <td>${hrs || 'N/A'}</td>
                         <td class="td-codigo">${numPlaza || 'N/A'}</td>
                         <td class="td-codigo">${codigo || 'N/A'}</td>
-                        <td class="col-center">${fechaIngreso}</td>
+                        <td>${fechaIngreso}</td>
                         <td><div class="td-wrap">${formAcademica || 'N/A'}</div></td>
                         <td>${situacion || 'N/A'}</td>
                         <td><div class="td-wrap">${funcion || 'N/A'}</div></td>
-                        <td class="col-center">${fechaPromocion}</td>
+                        <td>${fechaPromocion}</td>
                         <td><div class="td-wrap">${horario || 'N/A'}</div></td>
                         <td>${estadoCivil || 'N/A'}</td>
                         <td><div class="td-wrap">${domicilio || 'N/A'}</div></td>
                         <td class="td-codigo">${telefono || 'N/A'}</td>
-                        <td><div class="td-wrap">${email || 'N/A'}</td>
-                        <td class="col-center"><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
+                        <td><div class="td-wrap">${email || 'N/A'}</div></td>
+                        <td><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = htmlAddr || htmlAcumulado;
+            tbody.innerHTML = htmlAcumulado;
         }
 
         function exportarExcel() {
@@ -600,7 +598,7 @@
                 "Grado/Taller": obtenerValorCampo(al, ['grado/taller', 'grado']),
                 "Nombre del alumno": obtenerValorCampo(al, ['nombre del alumno', 'nombre']),
                 "CURP": obtenerValorCampo(al, ['curp']),
-                "Sexo": obtenerValveCampo ? obtenerValorCampo(al, ['sexo']) : obtenerValorCampo(al, ['sexo']),
+                "Sexo": obtenerValorCampo(al, ['sexo']),
                 "D": obtenerValorCampo(al, ['d']),
                 "M": obtenerValorCampo(al, ['m']),
                 "A": obtenerValorCampo(al, ['a']),
