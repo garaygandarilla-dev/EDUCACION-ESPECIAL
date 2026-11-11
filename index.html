@@ -1,2 +1,721 @@
-# EDUCACION-ESPECIAL
-ecosistema de información de educación especial región laguna
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosistema USAER - SEED Durango</title>
+    <!-- Librería para exportar a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f6f9; color: #333; }
+        
+        .header-bar {
+            background-color: #1a365d;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .header-title { font-size: 1.2rem; font-weight: bold; }
+        
+        .user-badge {
+            background-color: #2b6cb0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+        
+        .btn-logout {
+            background-color: #e53e3e;
+            color: white;
+            border: 2px solid white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-logout:hover { background-color: #c53030; }
+
+        /* Navegación por pestañas */
+        .nav-tabs {
+            background: #2d3748;
+            display: flex;
+            padding: 0 20px;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #cbd5e0;
+            padding: 12px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .tab-btn.active { color: white; border-bottom-color: #3182ce; background: #1a202c; }
+
+        .login-card {
+            max-width: 480px;
+            margin: 60px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-container input {
+            width: 100%;
+            padding-right: 40px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #718096;
+            padding: 0;
+            line-height: 1;
+        }
+        .toggle-password:hover { color: #2d3748; }
+
+        .container { max-width: 1950px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568; }
+        .form-group input, .form-group select { padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 0.9rem; }
+        
+        .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn-primary { background-color: #3182ce; color: white; }
+        .btn-success { background-color: #38a169; color: white; }
+        .btn-sync { background-color: #805ad5; color: white; }
+        
+        .sync-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .sync-online { background-color: #c6f6d5; color: #22543d; }
+        .sync-loading { background-color: #feebc8; color: #744210; }
+
+        /* Estilos de tablas con anchos definidos */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+        th { background-color: #edf2f7; color: #2d3748; }
+        tr:nth-child(even) { background-color: #f7fafc; }
+
+        /* Anchos específicos de columnas */
+        .col-np { width: 45px; text-align: center; }
+        .col-zona { width: 85px; }
+        .col-centro { width: 110px; }
+        .col-clave { width: 95px; }
+        .col-nivel { width: 100px; }
+        .col-grado { width: 100px; }
+        .col-nombre { width: 220px; }
+        .col-curp { width: 150px; }
+        .col-sexo { width: 60px; text-align: center; }
+        .col-corto { width: 50px; text-align: center; }
+        .col-condicion { width: 180px; }
+        .col-escuela { width: 220px; }
+        .col-apoyo { width: 200px; }
+
+        .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+        .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <div class="header-title">EDUCACIÓN ESPECIAL REGIÓN LAGUNA</div>
+        <div id="sessionHeaderControls" style="display: none; align-items: center;">
+            <span class="user-badge" id="userRoleBadge">Iniciando...</span>
+            <button class="btn-logout" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE ACCESO (LOGIN) -->
+    <div id="loginSection" class="login-card">
+        <h2 style="text-align: center; margin-bottom: 20px; color: #1a365d;">Acceso Institucional</h2>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>Selecciona Supervisión o Centro de Trabajo (CCT):</label>
+            <select id="loginUsuario">
+                <optgroup label="Supervisiones de Zona">
+                    <option value="sup1">Supervisor(a) - Zona 01</option>
+                    <option value="sup2">Supervisor(a) - Zona 02</option>
+                    <option value="sup3">Supervisor(a) - Zona 03</option>
+                    <option value="sup4">Supervisor(a) - Zona 04</option>
+                </optgroup>
+                <optgroup label="Zona 01 - Centros de Trabajo">
+                    <option value="10FUA0018M">CCT 10FUA0018M</option>
+                    <option value="10FUA0019L">CCT 10FUA0019L</option>
+                    <option value="10FUA0020A">CCT 10FUA0020A</option>
+                    <option value="10FUA0022Z">CCT 10FUA0022Z</option>
+                    <option value="10FUA0030H">CCT 10FUA0030H</option>
+                    <option value="10FUA0032F">CCT 10FUA0032F</option>
+                    <option value="10FUA0062Z">CCT 10FUA0062Z</option>
+                </optgroup>
+                <optgroup label="Zona 02 - Centros de Trabajo">
+                    <option value="10DML0007F">CCT 10DML0007F</option>
+                    <option value="10DML0028S">CCT 10DML0028S</option>
+                    <option value="10FUA0023Y">CCT 10FUA0023Y</option>
+                    <option value="10FUA0024X">CCT 10FUA0024X</option>
+                    <option value="10FUA0035C">CCT 10FUA0035C</option>
+                    <option value="10FUA0048X">CCT 10FUA0048X</option>
+                    <option value="10FUA0064Y">CCT 10FUA0064Y</option>
+                </optgroup>
+                <optgroup label="Zona 03 - Centros de Trabajo">
+                    <option value="10DML0018L">CCT 10DML0018L</option>
+                    <option value="10DML0029R">CCT 10DML0029R</option>
+                    <option value="10FUA0025W">CCT 10FUA0025W</option>
+                    <option value="10FUA0026V">CCT 10FUA0026V</option>
+                    <option value="10FUA0027U">CCT 10FUA0027U</option>
+                    <option value="10FUA0028T">CCT 10FUA0028T</option>
+                    <option value="10FUA0029S">CCT 10FUA0029S</option>
+                    <option value="10FUA0053S">CCT 10FUA0053S</option>
+                    <option value="10FUA0080P">CCT 10FUA0080P</option>
+                </optgroup>
+                <optgroup label="Zona 04 - Centros de Trabajo">
+                    <option value="10DML0010T">CCT 10DML0010T</option>
+                    <option value="10FUA0021Z">CCT 10FUA0021Z</option>
+                    <option value="10FUA0033E">CCT 10FUA0033E</option>
+                    <option value="10FUA0060B">CCT 10FUA0060B</option>
+                    <option value="10FUA0061A">CCT 10FUA0061A</option>
+                    <option value="10FUA0063Z">CCT 10FUA0063Z</option>
+                    <option value="10FUA0081O">CCT 10FUA0081O</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Clave Personal de Acceso:</label>
+            <div class="password-container">
+                <input type="password" id="loginPass" placeholder="Ingresa tu clave (Ej: ZONA1-2026 o tu CCT)">
+                <button type="button" class="toggle-password" onclick="toggleMostrarPassword()" title="Mostrar/Ocultar Contraseña">👁️</button>
+            </div>
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" type="button" onclick="iniciarSesion()">Ingresar al Sistema</button>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="appSection" style="display: none;">
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="cambiarPestana('alumnosSection', this)">🎓 Módulo de Alumnos</button>
+            <button class="tab-btn" onclick="cambiarPestana('personalSection', this)">📋 Plantilla de Personal</button>
+        </div>
+
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <button class="btn btn-sync" onclick="sincronizarTodo()">🔄 Sincronizar Todo con Google Sheets</button>
+                    <span id="syncBadge" class="sync-status sync-online">Sheets Conectados</span>
+                </div>
+                <button class="btn btn-success" onclick="exportarExcel()">📊 Exportar Concentrado SEED</button>
+            </div>
+
+            <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS) -->
+            <div id="alumnosSection" class="tab-content">
+                <div class="card">
+                    <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos</h3>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="text" id="searchAlumno" oninput="debounceBusquedaAlumnos()" placeholder="🔍 Buscar por zona, centro, alumno, CURP, escuela o condición...">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-np">NP</th>
+                                    <th class="col-zona">Zona</th>
+                                    <th class="col-centro">Centro</th>
+                                    <th class="col-clave">Clave</th>
+                                    <th class="col-nivel">Nivel</th>
+                                    <th class="col-grado">Grado/Taller</th>
+                                    <th class="col-nombre">Nombre del alumno</th>
+                                    <th class="col-curp">CURP</th>
+                                    <th class="col-sexo">Sexo</th>
+                                    <th class="col-corto">D</th>
+                                    <th class="col-corto">M</th>
+                                    <th class="col-corto">A</th>
+                                    <th class="col-corto">I</th>
+                                    <th class="col-corto">F</th>
+                                    <th class="col-condicion">Condición</th>
+                                    <th class="col-corto">S.F</th>
+                                    <th class="col-corto">P/NP</th>
+                                    <th class="col-escuela">Nombre de la Escuela</th>
+                                    <th class="col-apoyo">Maestro(a) de Apoyo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaAlumnos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL -->
+            <div id="personalSection" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo</h3>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Zona</th>
+                                    <th>Nombre del Centro</th>
+                                    <th>Apellido Paterno</th>
+                                    <th>Apellido Materno</th>
+                                    <th>Nombre(s)</th>
+                                    <th>Filiación</th>
+                                    <th>Sexo</th>
+                                    <th>Clave CURP</th>
+                                    <th>DEP</th>
+                                    <th>Unid</th>
+                                    <th>Sub Unid</th>
+                                    <th>Categ.</th>
+                                    <th>Hrs</th>
+                                    <th>Num. Plaza</th>
+                                    <th>Código</th>
+                                    <th>Fecha de Ingreso</th>
+                                    <th>Formación Académica</th>
+                                    <th>Situación</th>
+                                    <th>Función</th>
+                                    <th>Fecha de Promoción</th>
+                                    <th>Horario</th>
+                                    <th>Estado Civil</th>
+                                    <th>Domicilio Particular</th>
+                                    <th>Teléfono</th>
+                                    <th>E-Mail</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPersonal"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const URL_PLANTILLA = 'https://script.google.com/macros/s/AKfycbyOhJA1VtJ11kd6-XG1o2KAdrZSFjX4caZJT7Y1FSpwUnf0gyEshoh32p1aCLqhX8KG/exec';
+        const URL_ALUMNOS = 'https://script.google.com/macros/s/AKfycbx340wj_KV-bbgruvbMVtT2i7gU4ycLoDoZBzVKUJ8DMn9lBLFVsJg_E3NXfUufvg/exec';
+
+        const CATALOGO_ZONAS = {
+            "Zona 01": ["10FUA0018M", "10FUA0019L", "10FUA0020A", "10FUA0022Z", "10FUA0030H", "10FUA0032F", "10FUA0062Z"],
+            "Zona 02": ["10DML0007F", "10DML0028S", "10FUA0023Y", "10FUA0024X", "10FUA0035C", "10FUA0048X", "10FUA0064Y"],
+            "Zona 03": ["10DML0018L", "10DML0029R", "10FUA0025W", "10FUA0026V", "10FUA0027U", "10FUA0028T", "10FUA0029S", "10FUA0053S", "10FUA0080P"],
+            "Zona 04": ["10DML0010T", "10FUA0021Z", "10FUA0033E", "10FUA0060B", "10FUA0061A", "10FUA0063Z", "10FUA0081O"]
+        };
+
+        const BASE_USUARIOS = {
+            sup1: { pass: 'ZONA1-2026', nombre: 'Supervisor(a) Zona 01', rol: 'Supervisor', zona: 'Zona 01' },
+            sup2: { pass: 'ZONA2-2026', nombre: 'Supervisor(a) Zona 02', rol: 'Supervisor', zona: 'Zona 02' },
+            sup3: { pass: 'ZONA3-2026', nombre: 'Supervisor(a) Zona 03', rol: 'Supervisor', zona: 'Zona 03' },
+            sup4: { pass: 'ZONA4-2026', nombre: 'Supervisor(a) Zona 04', rol: 'Supervisor', zona: 'Zona 04' },
+
+            "10FUA0018M": { pass: '10FUA0018M', nombre: 'Dirección CCT 10FUA0018M', rol: 'Director', centro: '10FUA0018M', zona: 'Zona 01' },
+            "10FUA0019L": { pass: '10FUA0019L', nombre: 'Dirección CCT 10FUA0019L', rol: 'Director', centro: '10FUA0019L', zona: 'Zona 01' },
+            "10FUA0020A": { pass: '10FUA0020A', nombre: 'Dirección CCT 10FUA0020A', rol: 'Director', centro: '10FUA0020A', zona: 'Zona 01' },
+            "10FUA0022Z": { pass: '10FUA0022Z', nombre: 'Dirección CCT 10FUA0022Z', rol: 'Director', centro: '10FUA0022Z', zona: 'Zona 01' },
+            "10FUA0030H": { pass: '10FUA0030H', nombre: 'Dirección CCT 10FUA0030H', rol: 'Director', centro: '10FUA0030H', zona: 'Zona 01' },
+            "10FUA0032F": { pass: '10FUA0032F', nombre: 'Dirección CCT 10FUA0032F', rol: 'Director', centro: '10FUA0032F', zona: 'Zona 01' },
+            "10FUA0062Z": { pass: '10FUA0062Z', nombre: 'Dirección CCT 10FUA0062Z', rol: 'Director', centro: '10FUA0062Z', zona: 'Zona 01' },
+
+            "10DML0007F": { pass: '10DML0007F', nombre: 'Dirección CCT 10DML0007F', rol: 'Director', centro: '10DML0007F', zona: 'Zona 02' },
+            "10DML0028S": { pass: '10DML0028S', nombre: 'Dirección CCT 10DML0028S', rol: 'Director', centro: '10DML0028S', zona: 'Zona 02' },
+            "10FUA0023Y": { pass: '10FUA0023Y', nombre: 'Dirección CCT 10FUA0023Y', rol: 'Director', centro: '10FUA0023Y', zona: 'Zona 02' },
+            "10FUA0024X": { pass: '10FUA0024X', nombre: 'Dirección CCT 10FUA0024X', rol: 'Director', centro: '10FUA0024X', zona: 'Zona 02' },
+            "10FUA0035C": { pass: '10FUA0035C', nombre: 'Dirección CCT 10FUA0035C', rol: 'Director', centro: '10FUA0035C', zona: 'Zona 02' },
+            "10FUA0048X": { pass: '10FUA0048X', nombre: 'Dirección CCT 10FUA0048X', rol: 'Director', centro: '10FUA0048X', zona: 'Zona 02' },
+            "10FUA0064Y": { pass: '10FUA0064Y', nombre: 'Dirección CCT 10FUA0064Y', rol: 'Director', centro: '10FUA0064Y', zona: 'Zona 02' },
+
+            "10DML0018L": { pass: '10DML0018L', nombre: 'Dirección CCT 10DML0018L', rol: 'Director', centro: '10DML0018L', zona: 'Zona 03' },
+            "10DML0029R": { pass: '10DML0029R', nombre: 'Dirección CCT 10DML0029R', rol: 'Director', centro: '10DML0029R', zona: 'Zona 03' },
+            "10FUA0025W": { pass: '10FUA0025W', nombre: 'Dirección CCT 10FUA0025W', rol: 'Director', centro: '10FUA0025W', zona: 'Zona 03' },
+            "10FUA0026V": { pass: '10FUA0026V', nombre: 'Dirección CCT 10FUA0026V', rol: 'Director', centro: '10FUA0026V', zona: 'Zona 03' },
+            "10FUA0027U": { pass: '10FUA0027U', nombre: 'Dirección CCT 10FUA0027U', rol: 'Director', centro: '10FUA0027U', zona: 'Zona 03' },
+            "10FUA0028T": { pass: '10FUA0028T', nombre: 'Dirección CCT 10FUA0028T', rol: 'Director', centro: '10FUA0028T', zona: 'Zona 03' },
+            "10FUA0029S": { pass: '10FUA0029S', nombre: 'Dirección CCT 10FUA0029S', rol: 'Director', centro: '10FUA0029S', zona: 'Zona 03' },
+            "10FUA0053S": { pass: '10FUA0053S', nombre: 'Dirección CCT 10FUA0053S', rol: 'Director', centro: '10FUA0053S', zona: 'Zona 03' },
+            "10FUA0080P": { pass: '10FUA0080P', nombre: 'Dirección CCT 10FUA0080P', rol: 'Director', centro: '10FUA0080P', zona: 'Zona 03' },
+
+            "10DML0010T": { pass: '10DML0010T', nombre: 'Dirección CCT 10DML0010T', rol: 'Director', centro: '10DML0010T', zona: 'Zona 04' },
+            "10FUA0021Z": { pass: '10FUA0021Z', nombre: 'Dirección CCT 10FUA0021Z', rol: 'Director', centro: '10FUA0021Z', zona: 'Zona 04' },
+            "10FUA0033E": { pass: '10FUA0033E', nombre: 'Dirección CCT 10FUA0033E', rol: 'Director', centro: '10FUA0033E', zona: 'Zona 04' },
+            "10FUA0060B": { pass: '10FUA0060B', nombre: 'Dirección CCT 10FUA0060B', rol: 'Director', centro: '10FUA0060B', zona: 'Zona 04' },
+            "10FUA0061A": { pass: '10FUA0061A', nombre: 'Dirección CCT 10FUA0061A', rol: 'Director', centro: '10FUA0061A', zona: 'Zona 04' },
+            "10FUA0063Z": { pass: '10FUA0063Z', nombre: 'Dirección CCT 10FUA0063Z', rol: 'Director', centro: '10FUA0063Z', zona: 'Zona 04' },
+            "10FUA0081O": { pass: '10FUA0081O', nombre: 'Dirección CCT 10FUA0081O', rol: 'Director', centro: '10FUA0081O', zona: 'Zona 04' }
+        };
+
+        let usuarioSesion = JSON.parse(localStorage.getItem('usaer_sesion') || 'null');
+        let dbAlumnos = JSON.parse(localStorage.getItem('usaer_alumnos') || '[]');
+        let dbPersonal = JSON.parse(localStorage.getItem('usaer_personal') || '[]');
+
+        let timerAlumnos = null;
+        let timerPersonal = null;
+
+        window.onload = function() {
+            if (usuarioSesion) {
+                iniciarModoApp();
+            } else {
+                document.getElementById('loginSection').style.display = 'block';
+            }
+        };
+
+        function toggleMostrarPassword() {
+            const passInput = document.getElementById('loginPass');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+            } else {
+                passInput.type = 'password';
+            }
+        }
+
+        function iniciarSesion() {
+            const userKey = document.getElementById('loginUsuario').value;
+            const passVal = document.getElementById('loginPass').value.trim();
+            const userObj = BASE_USUARIOS[userKey];
+
+            if (userObj && userObj.pass === passVal) {
+                usuarioSesion = userObj;
+                localStorage.setItem('usaer_sesion', JSON.stringify(usuarioSesion));
+                iniciarModoApp();
+            } else {
+                alert('Clave de acceso incorrecta para el usuario seleccionado.');
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('usaer_sesion');
+            usuarioSesion = null;
+            location.reload();
+        }
+
+        function iniciarModoApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('appSection').style.display = 'block';
+            document.getElementById('sessionHeaderControls').style.display = 'flex';
+            document.getElementById('userRoleBadge').textContent = `${usuarioSesion.nombre} (${usuarioSesion.rol})`;
+
+            sincronizarTodo();
+        }
+
+        function cambiarPestana(targetId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(targetId).style.display = 'block';
+            btnElement.classList.add('active');
+        }
+
+        async function sincronizarTodo() {
+            const badge = document.getElementById('syncBadge');
+            badge.textContent = "Sincronizando...";
+            badge.className = "sync-status sync-loading";
+
+            if (URL_ALUMNOS) {
+                try {
+                    const res = await fetch(URL_ALUMNOS);
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        dbAlumnos = data;
+                        localStorage.setItem('usaer_alumnos', JSON.stringify(dbAlumnos));
+                    }
+                } catch (e) { console.warn("Error cargando Alumnos:", e); }
+            }
+
+            if (URL_PLANTILLA) {
+                try {
+                    const res = await fetch(URL_PLANTILLA);
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        dbPersonal = data;
+                        localStorage.setItem('usaer_personal', JSON.stringify(dbPersonal));
+                    }
+                } catch (e) { console.warn("Error cargando Plantilla:", e); }
+            }
+
+            renderAlumnos();
+            renderPersonal();
+
+            badge.textContent = "Sheets Conectados";
+            badge.className = "sync-status sync-online";
+        }
+
+        function formatearFecha(valor) {
+            if (!valor) return 'N/A';
+            const strVal = valor.toString().trim();
+            const fechaObj = new Date(strVal);
+            if (!isNaN(fechaObj.getTime())) {
+                const d = String(fechaObj.getDate()).padStart(2, '0');
+                const m = String(fechaObj.getMonth() + 1).padStart(2, '0');
+                const y = fechaObj.getFullYear();
+                if (y > 1900 && y < 2100) {
+                    return `${d}/${m}/${y}`;
+                }
+            }
+            return strVal;
+        }
+
+        function obtenerValorCampo(obj, posiblesNombres) {
+            if (!obj) return '';
+            const llaves = Object.keys(obj);
+            
+            for (let nombre of posiblesNombres) {
+                const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+                const llaveExacta = llaves.find(k => {
+                    const limpiaK = k.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+                    return limpiaK === limpiaN;
+                });
+                if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta] !== '') {
+                    return obj[llaveExacta].toString().trim();
+                }
+            }
+
+            for (let nombre of posiblesNombres) {
+                const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+                const llaveEncontrada = llaves.find(k => {
+                    const limpiaK = k.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
+                    if (limpiaN === 'nombre' && limpiaK.includes('centro')) return false;
+                    return limpiaK.includes(limpiaN);
+                });
+                if (llaveEncontrada && obj[llaveEncontrada] !== undefined && obj[llaveEncontrada] !== null && obj[llaveEncontrada] !== '') {
+                    return obj[llaveEncontrada].toString().trim();
+                }
+            }
+            return '';
+        }
+
+        function esRegistroPermitido(reg) {
+            return true;
+        }
+
+        function debounceBusquedaAlumnos() {
+            clearTimeout(timerAlumnos);
+            timerAlumnos = setTimeout(() => {
+                renderAlumnos();
+            }, 300);
+        }
+
+        function debounceBusquedaPersonal() {
+            clearTimeout(timerPersonal);
+            timerPersonal = setTimeout(() => {
+                renderPersonal();
+            }, 300);
+        }
+
+        function renderAlumnos() {
+            const tbody = document.getElementById('tablaAlumnos');
+            tbody.innerHTML = '';
+            const busqueda = (document.getElementById('searchAlumno')?.value || '').toLowerCase();
+            
+            let lista = dbAlumnos.filter(al => {
+                const textoFila = JSON.stringify(al).toLowerCase();
+                const coincide = textoFila.includes(busqueda);
+                if (!coincide) return false;
+                return esRegistroPermitido(al);
+            });
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:#718096;">No hay registros de alumnos para mostrar.</td></tr>`;
+                return;
+            }
+
+            let htmlAcumulado = "";
+            lista.forEach((al, idx) => {
+                const zona = obtenerValorCampo(al, ['zona']);
+                const centro = obtenerValorCampo(al, ['centro']);
+                const clave = obtenerValorCampo(al, ['clave']);
+                const nivel = obtenerValorCampo(al, ['nivel']);
+                const gradoTaller = obtenerValorCampo(al, ['grado/taller', 'grado', 'taller']);
+                const nombreAlumno = obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno']);
+                const curp = obtenerValorCampo(al, ['curp']);
+                const sexo = obtenerValorCampo(al, ['sexo']);
+                const d = obtenerValorCampo(al, ['d']);
+                const m = obtenerValorCampo(al, ['m']);
+                const a = obtenerValorCampo(al, ['a']);
+                const i = obtenerValorCampo(al, ['i']);
+                const f = obtenerValorCampo(al, ['f']);
+                const condicion = obtenerValorCampo(al, ['condicion', 'diagnostico']);
+                const sf = obtenerValorCampo(al, ['s.f', 'sf']);
+                const pnp = obtenerValorCampo(al, ['p/np', 'pnp']);
+                const nombreEscuela = obtenerValorCampo(al, ['nombre de la escuela', 'escuela']);
+                const maestroApoyo = obtenerValorCampo(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo']);
+
+                htmlAcumulado += `
+                    <tr>
+                        <td class="col-np">${idx + 1}</td>
+                        <td class="col-zona">${zona || 'N/A'}</td>
+                        <td class="col-centro">${centro || 'N/A'}</td>
+                        <td class="col-clave">${clave || 'N/A'}</td>
+                        <td class="col-nivel">${nivel || 'N/A'}</td>
+                        <td class="col-grado">${gradoTaller || 'N/A'}</td>
+                        <td class="col-nombre"><strong>${nombreAlumno || 'N/A'}</strong></td>
+                        <td class="col-curp">${curp || 'N/A'}</td>
+                        <td class="col-sexo">${sexo || 'N/A'}</td>
+                        <td class="col-corto">${d || ''}</td>
+                        <td class="col-corto">${m || ''}</td>
+                        <td class="col-corto">${a || ''}</td>
+                        <td class="col-corto">${i || ''}</td>
+                        <td class="col-corto">${f || ''}</td>
+                        <td class="col-condicion">${condicion || 'N/A'}</td>
+                        <td class="col-corto">${sf || ''}</td>
+                        <td class="col-corto">${pnp || ''}</td>
+                        <td class="col-escuela">${nombreEscuela || 'N/A'}</td>
+                        <td class="col-apoyo">${maestroApoyo || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = htmlAcumulado;
+        }
+
+        function renderPersonal() {
+            const tbody = document.getElementById('tablaPersonal');
+            tbody.innerHTML = '';
+            const busqueda = (document.getElementById('searchPersonal')?.value || '').toLowerCase();
+            
+            let lista = dbPersonal.filter(p => {
+                const textoFila = JSON.stringify(p).toLowerCase();
+                const coincide = textoFila.includes(busqueda);
+                if (!coincide) return false;
+                return esRegistroPermitido(p);
+            });
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="27" style="text-align:center; color:#718096;">No hay personal registrado que coincida con la búsqueda.</td></tr>`;
+                return;
+            }
+
+            let htmlAcumulado = "";
+            lista.forEach((p, idx) => {
+                const zona = obtenerValorCampo(p, ['zona']);
+                const nombreCentro = obtenerValorCampo(p, ['nombre del centro', 'centro de trabajo']);
+                
+                const apPaterno = obtenerValorCampo(p, ['apellido paterno', 'paterno', 'primer apellido']);
+                const apMaterno = obtenerValorCampo(p, ['apellido materno', 'materno', 'segundo apellido']);
+                const nombreDocente = obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)']);
+                
+                const filiacon = obtenerValorCampo(p, ['filiacion', 'filiación']);
+                const sexo = obtenerValorCampo(p, ['sexo']);
+                const curp = obtenerValorCampo(p, ['clave curp', 'curp']);
+                const dep = obtenerValorCampo(p, ['dep']);
+                const unid = obtenerValorCampo(p, ['unid']);
+                const subUnid = obtenerValorCampo(p, ['sub unid']);
+                const categ = obtenerValorCampo(p, ['categ.']);
+                const hrs = obtenerValorCampo(p, ['hrs']);
+                const numPlaza = obtenerValorCampo(p, ['num. plaza']);
+                const codigo = obtenerValorCampo(p, ['código', 'codigo']);
+                
+                const fechaIngreso = formatearFecha(obtenerValorCampo(p, ['fecha de ingreso']));
+                const fechaPromocion = formatearFecha(obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']));
+
+                const formAcademica = obtenerValorCampo(p, ['formación académica', 'formacion academica']);
+                const situacion = obtenerValorCampo(p, ['situación', 'situacion']);
+                const funcion = obtenerValorCampo(p, ['funcion', 'función']);
+                const horario = obtenerValorCampo(p, ['horario']);
+                const estadoCivil = obtenerValorCampo(p, ['estado civil']);
+                const domicilio = obtenerValorCampo(p, ['domicilio particular', 'domicilio']);
+                const telefono = obtenerValorCampo(p, ['telefono', 'teléfono']);
+                const email = obtenerValorCampo(p, ['e-mail', 'correo', 'email']);
+                const status = (obtenerValorCampo(p, ['status', 'estado']) || 'SI').toUpperCase();
+
+                htmlAcumulado += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${zona || 'N/A'}</td>
+                        <td>${nombreCentro || 'N/A'}</td>
+                        <td><strong>${apPaterno || 'N/A'}</strong></td>
+                        <td><strong>${apMaterno || 'N/A'}</strong></td>
+                        <td><strong>${nombreDocente || 'N/A'}</strong></td>
+                        <td>${filiacon || 'N/A'}</td>
+                        <td>${sexo || 'N/A'}</td>
+                        <td>${curp || 'N/A'}</td>
+                        <td>${dep || 'N/A'}</td>
+                        <td>${unid || 'N/A'}</td>
+                        <td>${subUnid || 'N/A'}</td>
+                        <td>${categ || 'N/A'}</td>
+                        <td>${hrs || 'N/A'}</td>
+                        <td>${numPlaza || 'N/A'}</td>
+                        <td>${codigo || 'N/A'}</td>
+                        <td>${fechaIngreso}</td>
+                        <td>${formAcademica || 'N/A'}</td>
+                        <td>${situacion || 'N/A'}</td>
+                        <td>${funcion || 'N/A'}</td>
+                        <td>${fechaPromocion}</td>
+                        <td>${horario || 'N/A'}</td>
+                        <td>${estadoCivil || 'N/A'}</td>
+                        <td>${domicilio || 'N/A'}</td>
+                        <td>${telefono || 'N/A'}</td>
+                        <td>${email || 'N/A'}</td>
+                        <td><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = htmlAcumulado;
+        }
+
+        function exportarExcel() {
+            const data = dbAlumnos.filter(al => esRegistroPermitido(al)).map((al, idx) => ({
+                "NP": idx + 1,
+                "Zona": obtenerValorCampo(al, ['zona']),
+                "Centro": obtenerValorCampo(al, ['centro']),
+                "Clave": obtenerValorCampo(al, ['clave']),
+                "Nivel": obtenerValorCampo(al, ['nivel']),
+                "Grado/Taller": obtenerValorCampo(al, ['grado/taller', 'grado']),
+                "Nombre del alumno": obtenerValorCampo(al, ['nombre del alumno', 'nombre']),
+                "CURP": obtenerValorCampo(al, ['curp']),
+                "Sexo": obtenerValorCampo(al, ['sexo']),
+                "D": obtenerValorCampo(al, ['d']),
+                "M": obtenerValorCampo(al, ['m']),
+                "A": obtenerValorCampo(al, ['a']),
+                "I": obtenerValorCampo(al, ['i']),
+                "F": obtenerValorCampo(al, ['f']),
+                "Condición": obtenerValorCampo(al, ['condicion']),
+                "S.F": obtenerValorCampo(al, ['s.f']),
+                "P/NP": obtenerValorCampo(al, ['p/np']),
+                "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            
+            const colWidths = Object.keys(data[0] || {}).map(key => ({
+                wch: Math.max(key.length, ...data.map(row => (row[key] ? row[key].toString().length : 0))) + 3
+            }));
+            ws['!cols'] = colWidths;
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Concentrado Alumnos");
+            XLSX.writeFile(wb, "Ecosistema_USAER_Alumnos_2026_2027.xlsx");
+        }
+    </script>
+</body>
+</html>
