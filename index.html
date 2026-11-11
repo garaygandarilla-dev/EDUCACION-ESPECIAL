@@ -122,15 +122,16 @@
         .sync-online { background-color: #c6f6d5; color: #22543d; }
         .sync-loading { background-color: #feebc8; color: #744210; }
 
-        /* Estilos de tablas amplias con formato de texto centrado */
-        table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; }
-        th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: center; vertical-align: middle; white-space: nowrap; }
-        th { background-color: #edf2f7; color: #2d3748; font-weight: bold; }
-        tr:nth-child(even) { background-color: #f7fafc; }
+        /* Estilo idéntico a Google Sheets (Cuadriculado, centrado y profesional) */
+        table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: #ffffff; }
+        th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; }
+        th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; }
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        tr:hover { background-color: #f1f5f9; }
 
-        /* Clases auxiliares para textos largos con ajuste centrado */
-        .td-wrap { white-space: normal; min-width: 200px; max-width: 300px; word-break: break-word; text-align: center; }
-        .td-codigo { white-space: nowrap; text-align: center; }
+        /* Clases específicas para celdas con formato de códigos y textos largos */
+        .td-codigo { white-space: nowrap; font-family: monospace; font-size: 0.8rem; }
+        .td-texto { text-align: center; min-width: 180px; }
 
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
@@ -480,11 +481,11 @@
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${zona || 'N/A'}</td>
-                        <td>${centro || 'N/A'}</td>
+                        <td class="td-texto">${centro || 'N/A'}</td>
                         <td class="td-codigo">${clave || 'N/A'}</td>
                         <td>${nivel || 'N/A'}</td>
                         <td>${gradoTaller || 'N/A'}</td>
-                        <td><strong>${nombreAlumno || 'N/A'}</strong></td>
+                        <td class="td-texto"><strong>${nombreAlumno || 'N/A'}</strong></td>
                         <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
                         <td>${sexo || 'N/A'}</td>
                         <td>${d || ''}</td>
@@ -495,8 +496,8 @@
                         <td>${condicion || 'N/A'}</td>
                         <td>${sf || ''}</td>
                         <td>${pnp || ''}</td>
-                        <td>${nombreEscuela || 'N/A'}</td>
-                        <td>${maestroApoyo || 'N/A'}</td>
+                        <td class="td-texto">${nombreEscuela || 'N/A'}</td>
+                        <td class="td-texto">${maestroApoyo || 'N/A'}</td>
                     </tr>
                 `;
             });
@@ -557,7 +558,7 @@
                     <tr>
                         <td>${idx + 1}</td>
                         <td>${zona || 'N/A'}</td>
-                        <td><div class="td-wrap">${nombreCentro || 'N/A'}</div></td>
+                        <td class="td-texto">${nombreCentro || 'N/A'}</td>
                         <td><strong>${apPaterno || 'N/A'}</strong></td>
                         <td><strong>${apMaterno || 'N/A'}</strong></td>
                         <td><strong>${nombreDocente || 'N/A'}</strong></td>
@@ -572,15 +573,15 @@
                         <td class="td-codigo">${numPlaza || 'N/A'}</td>
                         <td class="td-codigo">${codigo || 'N/A'}</td>
                         <td>${fechaIngreso}</td>
-                        <td><div class="td-wrap">${formAcademica || 'N/A'}</div></td>
+                        <td class="td-texto">${formAcademica || 'N/A'}</td>
                         <td>${situacion || 'N/A'}</td>
-                        <td><div class="td-wrap">${funcion || 'N/A'}</div></td>
+                        <td class="td-texto">${funcion || 'N/A'}</td>
                         <td>${fechaPromocion}</td>
-                        <td><div class="td-wrap">${horario || 'N/A'}</div></td>
+                        <td class="td-texto">${horario || 'N/A'}</td>
                         <td>${estadoCivil || 'N/A'}</td>
-                        <td><div class="td-wrap">${domicilio || 'N/A'}</div></td>
+                        <td class="td-texto">${domicilio || 'N/A'}</td>
                         <td class="td-codigo">${telefono || 'N/A'}</td>
-                        <td><div class="td-wrap">${email || 'N/A'}</div></td>
+                        <td class="td-texto">${email || 'N/A'}</td>
                         <td><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
                     </tr>
                 `;
@@ -608,7 +609,7 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
