@@ -63,7 +63,7 @@
             border-bottom: 3px solid transparent;
             transition: all 0.2s;
         }
-        .tab-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        .tab-btn.hover { color: white; background: rgba(255,255,255,0.05); }
         .tab-btn.active { color: white; border-bottom-color: #3182ce; background: #1a202c; }
 
         .login-card {
@@ -123,13 +123,12 @@
         .sync-online { background-color: #c6f6d5; color: #22543d; }
         .sync-loading { background-color: #feebc8; color: #744210; }
 
-        /* Estilos de tablas con diseño fijo estricto */
+        /* Estilos de tablas permitiendo salto de línea completo */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: fixed; }
-        th, td { border: 1px solid #e2e8f0; padding: 8px 4px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 6px; text-align: left; white-space: normal; word-break: break-word; vertical-align: middle; }
         th { background-color: #edf2f7; color: #2d3748; text-align: center; }
         tr:nth-child(even) { background-color: #f7fafc; }
 
-        /* Clases auxiliares para centrar contenido corto */
         .col-center { text-align: center; }
 
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
@@ -191,27 +190,26 @@
                     </div>
                     <div style="overflow-x: auto;">
                         <table>
-                            <!-- COLGROUP: Define anchos exactos y estrictos para cada una de las 19 columnas -->
                             <colgroup>
-                                <col style="width: 40px;">   <!-- 1. NP -->
-                                <col style="width: 75px;">   <!-- 2. Zona -->
-                                <col style="width: 95px;">   <!-- 3. Centro -->
-                                <col style="width: 85px;">   <!-- 4. Clave -->
-                                <col style="width: 85px;">   <!-- 5. Nivel -->
-                                <col style="width: 85px;">   <!-- 6. Grado/Taller -->
-                                <col style="width: 190px;">  <!-- 7. Nombre del alumno -->
-                                <col style="width: 135px;">  <!-- 8. CURP -->
-                                <col style="width: 50px;">   <!-- 9. Sexo -->
-                                <col style="width: 36px;">   <!-- 10. D -->
-                                <col style="width: 36px;">   <!-- 11. M -->
-                                <col style="width: 42px;">   <!-- 12. A (Año) -->
-                                <col style="width: 36px;">   <!-- 13. I -->
-                                <col style="width: 36px;">   <!-- 14. F -->
+                                <col style="width: 45px;">   <!-- 1. NP -->
+                                <col style="width: 85px;">   <!-- 2. Zona -->
+                                <col style="width: 130px;">  <!-- 3. Centro -->
+                                <col style="width: 95px;">   <!-- 4. Clave -->
+                                <col style="width: 95px;">   <!-- 5. Nivel -->
+                                <col style="width: 90px;">   <!-- 6. Grado/Taller -->
+                                <col style="width: 210px;">  <!-- 7. Nombre del alumno -->
+                                <col style="width: 145px;">  <!-- 8. CURP -->
+                                <col style="width: 55px;">   <!-- 9. Sexo -->
+                                <col style="width: 45px;">   <!-- 10. D -->
+                                <col style="width: 45px;">   <!-- 11. M -->
+                                <col style="width: 55px;">   <!-- 12. A (Año) -->
+                                <col style="width: 45px;">   <!-- 13. I -->
+                                <col style="width: 45px;">   <!-- 14. F -->
                                 <col style="width: 150px;">  <!-- 15. Condición -->
-                                <col style="width: 36px;">   <!-- 16. S.F -->
-                                <col style="width: 42px;">   <!-- 17. P/NP -->
-                                <col style="width: 175px;">  <!-- 18. Nombre de la Escuela -->
-                                <col style="width: 165px;">  <!-- 19. Maestro(a) de Apoyo -->
+                                <col style="width: 45px;">   <!-- 16. S.F -->
+                                <col style="width: 55px;">   <!-- 17. P/NP -->
+                                <col style="width: 195px;">  <!-- 18. Nombre de la Escuela -->
+                                <col style="width: 180px;">  <!-- 19. Maestro(a) de Apoyo -->
                             </colgroup>
                             <thead>
                                 <tr>
@@ -501,24 +499,24 @@
                 htmlAcumulado += `
                     <tr>
                         <td class="col-center">${idx + 1}</td>
-                        <td title="${zona}">${zona || 'N/A'}</td>
-                        <td title="${centro}">${centro || 'N/A'}</td>
-                        <td title="${clave}">${clave || 'N/A'}</td>
-                        <td title="${nivel}">${nivel || 'N/A'}</td>
-                        <td title="${gradoTaller}">${gradoTaller || 'N/A'}</td>
-                        <td title="${nombreAlumno}"><strong>${nombreAlumno || 'N/A'}</strong></td>
-                        <td title="${curp}">${curp || 'N/A'}</td>
+                        <td>${zona || 'N/A'}</td>
+                        <td>${centro || 'N/A'}</td>
+                        <td>${clave || 'N/A'}</td>
+                        <td>${nivel || 'N/A'}</td>
+                        <td>${gradoTaller || 'N/A'}</td>
+                        <td><strong>${nombreAlumno || 'N/A'}</strong></td>
+                        <td>${curp || 'N/A'}</td>
                         <td class="col-center">${sexo || 'N/A'}</td>
                         <td class="col-center">${d || ''}</td>
                         <td class="col-center">${m || ''}</td>
                         <td class="col-center">${a || ''}</td>
                         <td class="col-center">${i || ''}</td>
                         <td class="col-center">${f || ''}</td>
-                        <td title="${condicion}">${condicion || 'N/A'}</td>
+                        <td>${condicion || 'N/A'}</td>
                         <td class="col-center">${sf || ''}</td>
                         <td class="col-center">${pnp || ''}</td>
-                        <td title="${nombreEscuela}">${nombreEscuela || 'N/A'}</td>
-                        <td title="${maestroApoyo}">${maestroApoyo || 'N/A'}</td>
+                        <td>${nombreEscuela || 'N/A'}</td>
+                        <td>${maestroApoyo || 'N/A'}</td>
                     </tr>
                 `;
             });
