@@ -122,22 +122,16 @@
         .sync-online { background-color: #c6f6d5; color: #22543d; }
         .sync-loading { background-color: #feebc8; color: #744210; }
 
-        /* Estilos generales de tablas */
+        /* Estilos generales de tablas fluidas y adaptables */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; }
-        th, td { border: 1px solid #e2e8f0; padding: 9px 8px; text-align: left; vertical-align: middle; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px 10px; text-align: left; vertical-align: middle; white-space: normal; }
         th { background-color: #edf2f7; color: #2d3748; text-align: center; }
         tr:nth-child(even) { background-color: #f7fafc; }
 
-        /* Estilo específico para la plantilla con límite de 2 líneas y lectura completa por tooltip */
+        /* Clase adaptable para celdas de texto largo en la plantilla con espacio suficiente */
         .td-plantilla {
-            white-space: normal;
+            min-width: 150px;
             word-break: break-word;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-height: 2.8em; /* Ajuste aproximado para 2 líneas de texto */
         }
 
         .col-center { text-align: center; }
@@ -566,31 +560,31 @@
                 htmlAcumulado += `
                     <tr>
                         <td class="col-center">${idx + 1}</td>
-                        <td><div class="td-plantilla" title="${zona}">${zona || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${nombreCentro}">${nombreCentro || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${apPaterno}"><strong>${apPaterno || 'N/A'}</strong></div></td>
-                        <td><div class="td-plantilla" title="${apMaterno}"><strong>${apMaterno || 'N/A'}</strong></div></td>
-                        <td><div class="td-plantilla" title="${nombreDocente}"><strong>${nombreDocente || 'N/A'}</strong></div></td>
-                        <td><div class="td-plantilla" title="${filiacon}">${filiacon || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${zona || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${nombreCentro || 'N/A'}</div></td>
+                        <td><div class="td-plantilla"><strong>${apPaterno || 'N/A'}</strong></div></td>
+                        <td><div class="td-plantilla"><strong>${apMaterno || 'N/A'}</strong></div></td>
+                        <td><div class="td-plantilla"><strong>${nombreDocente || 'N/A'}</strong></div></td>
+                        <td><div class="td-plantilla">${filiacon || 'N/A'}</div></td>
                         <td class="col-center">${sexo || 'N/A'}</td>
-                        <td><div class="td-plantilla" title="${curp}">${curp || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${curp || 'N/A'}</div></td>
                         <td class="col-center">${dep || 'N/A'}</td>
                         <td class="col-center">${unid || 'N/A'}</td>
                         <td class="col-center">${subUnid || 'N/A'}</td>
-                        <td><div class="td-plantilla" title="${categ}">${categ || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${categ || 'N/A'}</div></td>
                         <td class="col-center">${hrs || 'N/A'}</td>
-                        <td><div class="td-plantilla" title="${numPlaza}">${numPlaza || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${codigo}">${codigo || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${numPlaza || 'N/A'}</td>
+                        <td><div class="td-plantilla">${codigo || 'N/A'}</div></td>
                         <td class="col-center">${fechaIngreso}</td>
-                        <td><div class="td-plantilla" title="${formAcademica}">${formAcademica || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${situacion}">${situacion || 'N/A'}</td>
-                        <td><div class="td-plantilla" title="${funcion}">${funcion || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${formAcademica || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${situacion || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${funcion || 'N/A'}</div></td>
                         <td class="col-center">${fechaPromocion}</td>
-                        <td><div class="td-plantilla" title="${horario}">${horario || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${estadoCivil}">${estadoCivil || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${domicilio}">${domicilio || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${telefono}">${telefono || 'N/A'}</div></td>
-                        <td><div class="td-plantilla" title="${email}">${email || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${horario || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${estadoCivil || 'N/A'}</div></td>
+                        <td><div class="td-plantilla" style="min-width: 220px;">${domicilio || 'N/A'}</div></td>
+                        <td><div class="td-plantilla">${telefono || 'N/A'}</div></td>
+                        <td><div class="td-plantilla" style="min-width: 180px;">${email || 'N/A'}</div></td>
                         <td class="col-center"><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
                     </tr>
                 `;
