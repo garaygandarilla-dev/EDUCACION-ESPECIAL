@@ -67,12 +67,13 @@
         .tab-btn.active { color: white; border-bottom-color: #3182ce; background: #1a202c; }
 
         .login-card {
-            max-width: 480px;
+            max-width: 440px;
             margin: 60px auto;
             background: white;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
         }
         
         .password-container {
@@ -102,9 +103,9 @@
         .container { max-width: 1950px; margin: 20px auto; padding: 0 15px; }
         .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
-        .form-group { display: flex; flex-direction: column; }
+        .form-group { display: flex; flex-direction: column; text-align: left; }
         .form-group label { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568; }
-        .form-group input, .form-group select { padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 0.9rem; }
+        .form-group input { padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 0.9rem; background-color: #f7fafc; color: #2d3748; font-weight: bold; }
         
         .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-primary { background-color: #3182ce; color: white; }
@@ -159,24 +160,21 @@
 
     <!-- PANTALLA DE ACCESO (LOGIN) -->
     <div id="loginSection" class="login-card">
-        <h2 style="text-align: center; margin-bottom: 20px; color: #1a365d;">Acceso Supervisión</h2>
+        <h2 style="margin-bottom: 20px; color: #1a365d;">Acceso al Sistema</h2>
+        
         <div class="form-group" style="margin-bottom: 15px;">
-            <label>Selecciona la Supervisión de Zona:</label>
-            <select id="loginUsuario">
-                <option value="sup1">Supervisor(a) - Zona 01</option>
-                <option value="sup2">Supervisor(a) - Zona 02</option>
-                <option value="sup3">Supervisor(a) - Zona 03</option>
-                <option value="sup4">Supervisor(a) - Zona 04</option>
-            </select>
+            <label>Usuario:</label>
+            <input type="text" value="Educación Especial" disabled>
         </div>
+
         <div class="form-group" style="margin-bottom: 20px;">
             <label>Clave de Acceso:</label>
             <div class="password-container">
-                <input type="password" id="loginPass" placeholder="Ingresa tu clave (Genérica: LAGUNA2026)">
+                <input type="password" id="loginPass" placeholder="Ingresa la clave">
                 <button type="button" class="toggle-password" onclick="toggleMostrarPassword()" title="Mostrar/Ocultar Contraseña">👁️</button>
             </div>
         </div>
-        <button class="btn btn-primary" style="width: 100%;" type="button" onclick="iniciarSesion()">Ingresar al Sistema</button>
+        <button class="btn btn-primary" style="width: 100%;" type="button" onclick="iniciarSesion()">Ingresar</button>
     </div>
 
     <!-- PANTALLA PRINCIPAL -->
@@ -287,16 +285,7 @@
         const URL_PLANTILLA = 'https://script.google.com/macros/s/AKfycbyOhJA1VtJ11kd6-XG1o2KAdrZSFjX4caZJT7Y1FSpwUnf0gyEshoh32p1aCLqhX8KG/exec';
         const URL_ALUMNOS = 'https://script.google.com/macros/s/AKfycbx340wj_KV-bbgruvbMVtT2i7gU4ycLoDoZBzVKUJ8DMn9lBLFVsJg_E3NXfUufvg/exec';
 
-        // Clave genérica y nivel configurados para las supervisiones
-        const CLAVE_GENERICA = "LAGUNA2026";
-        const ROL_NIVEL = "Educación Especial";
-
-        const BASE_USUARIOS = {
-            sup1: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 01', rol: ROL_NIVEL, zona: 'Zona 01' },
-            sup2: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 02', rol: ROL_NIVEL, zona: 'Zona 02' },
-            sup3: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 03', rol: ROL_NIVEL, zona: 'Zona 03' },
-            sup4: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 04', rol: ROL_NIVEL, zona: 'Zona 04' }
-        };
+        const CLAVE_CORRECTA = "LAGUNA2026";
 
         let usuarioSesion = JSON.parse(localStorage.getItem('usaer_sesion') || 'null');
         let dbAlumnos = JSON.parse(localStorage.getItem('usaer_alumnos') || '[]');
@@ -323,16 +312,14 @@
         }
 
         function iniciarSesion() {
-            const userKey = document.getElementById('loginUsuario').value;
             const passVal = document.getElementById('loginPass').value.trim();
-            const userObj = BASE_USUARIOS[userKey];
 
-            if (userObj && (userObj.pass === passVal || passVal === CLAVE_GENERICA)) {
-                usuarioSesion = userObj;
+            if (passVal === CLAVE_CORRECTA) {
+                usuarioSesion = { nombre: 'Educación Especial', rol: 'Región Laguna' };
                 localStorage.setItem('usaer_sesion', JSON.stringify(usuarioSesion));
                 iniciarModoApp();
             } else {
-                alert('Clave de acceso incorrecta. Utiliza la clave genérica.');
+                alert('Clave de acceso incorrecta.');
             }
         }
 
