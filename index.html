@@ -143,10 +143,10 @@
 
         /* Estilo tipo Google Sheets (Cuadriculado, centrado y profesional fijo) */
         table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: #ffffff; }
-        th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; }
-        th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; }
+        th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; cursor: pointer; }
+        th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; cursor: default; }
         tr:nth-child(even) { background-color: #fdfdfd; }
-        tr:hover { background-color: #f1f5f9; }
+        tr:hover { background-color: #ebf8ff !important; }
 
         .td-codigo { white-space: nowrap; text-align: center; }
         .td-texto { min-width: 180px; text-align: center; }
@@ -154,6 +154,64 @@
 
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+
+        /* Ventana Modal de Ficha de Identificación */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-card {
+            background: white;
+            width: 100%;
+            max-width: 750px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+        }
+        .modal-header {
+            background: #1a365d;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+        .ficha-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .ficha-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 6px;
+        }
+        .ficha-item.full { grid-column: span 2; }
+        .ficha-label { font-size: 0.75rem; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
+        .ficha-val { font-size: 0.95rem; color: #2d3748; font-weight: 600; }
+        .modal-footer {
+            padding: 15px 20px;
+            background: #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
     </style>
 </head>
 <body>
@@ -221,7 +279,7 @@
             <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS) -->
             <div id="alumnosSection" class="tab-content">
                 <div class="card">
-                    <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos</h3>
+                    <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha de Identificación)</span></h3>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <input type="text" id="searchAlumno" oninput="debounceBusquedaAlumnos()" placeholder="🔍 Buscar por zona, centro, alumno, CURP, escuela o condición...">
                     </div>
@@ -256,10 +314,10 @@
                 </div>
             </div>
 
-            <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL (CON CAMPOS AMPLIADOS FUNCIONALES) -->
+            <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL -->
             <div id="personalSection" class="tab-content" style="display: none;">
                 <div class="card">
-                    <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo</h3>
+                    <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha de Identificación)</span></h3>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
                     </div>
@@ -306,6 +364,23 @@
         </div>
     </div>
 
+    <!-- VENTANA MODAL DE FICHA DE IDENTIFICACIÓN -->
+    <div id="fichaModal" class="modal-overlay" onclick="cerrarFichaModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitulo">Ficha de Identificación</h3>
+                <button class="btn-logout" onclick="cerrarFichaModalDirecto()">✕ Cerrar</button>
+            </div>
+            <div class="modal-body" id="modalContenidoFicha">
+                <!-- Se inyecta dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="descargarFichaIndividual()">📥 Descargar Ficha PDF/Texto</button>
+                <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const URL_PLANTILLA = 'https://script.google.com/macros/s/AKfycbyOhJA1VtJ11kd6-XG1o2KAdrZSFjX4caZJT7Y1FSpwUnf0gyEshoh32p1aCLqhX8KG/exec';
         const URL_ALUMNOS = 'https://script.google.com/macros/s/AKfycbx340wj_KV-bbgruvbMVtT2i7gU4ycLoDoZBzVKUJ8DMn9lBLFVsJg_E3NXfUufvg/exec';
@@ -318,6 +393,7 @@
 
         let timerAlumnos = null;
         let timerPersonal = null;
+        let registroSeleccionadoActual = null;
 
         window.onload = function() {
             if (usuarioSesion) {
@@ -522,8 +598,10 @@
                 const nombreEscuela = obtenerValorCampo(al, ['nombre de la escuela', 'escuela']);
                 const maestroApoyo = obtenerValorCampo(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo']);
 
+                const jsonStr = encodeURIComponent(JSON.stringify(al));
+
                 htmlAcumulado += `
-                    <tr>
+                    <tr onclick='abrirFichaAlumno(decodeURIComponent("${jsonStr}"))'>
                         <td class="td-corto">${idx + 1}</td>
                         <td class="td-codigo">${zona || 'N/A'}</td>
                         <td class="td-texto">${centro || 'N/A'}</td>
@@ -600,8 +678,10 @@
                 const email = obtenerValorCampo(p, ['e-mail', 'correo', 'email']);
                 const status = (obtenerValorCampo(p, ['status', 'estado']) || 'SI').toUpperCase();
 
+                const jsonStr = encodeURIComponent(JSON.stringify(p));
+
                 htmlAcumulado += `
-                    <tr>
+                    <tr onclick='abrirFichaPersonal(decodeURIComponent("${jsonStr}"))'>
                         <td class="td-corto">${idx + 1}</td>
                         <td class="td-codigo">${zona || 'N/A'}</td>
                         <td class="td-texto">${nombreCentro || 'N/A'}</td>
@@ -634,6 +714,146 @@
                 `;
             });
             tbody.innerHTML = htmlAcumulado;
+        }
+
+        function abrirFichaAlumno(alJson) {
+            const al = JSON.parse(alJson);
+            registroSeleccionadoActual = { tipo: 'Alumno', data: al };
+
+            document.getElementById('modalTitulo').textContent = "Ficha de Identificación de Alumno";
+            
+            const html = `
+                <div class="ficha-grid">
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Nombre del Alumno</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">CURP</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['curp'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Sexo</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['sexo'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Nivel Educativo</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['nivel'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Grado y Taller</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['grado/taller', 'grado', 'taller'])}</div>
+                    </div>
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Condición / Diagnóstico</div>
+                        <div class="ficha-val" style="color: #2b6cb0;">${obtenerValorCampo(al, ['condicion', 'diagnostico'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Zona / Centro de Trabajo</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['zona'])} - ${obtenerValorCampo(al, ['centro'])} (${obtenerValorCampo(al, ['clave'])})</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Escuela de Adscripción</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}</div>
+                    </div>
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Maestro(a) de Apoyo USAER</div>
+                        <div class="ficha-val">${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContenidoFicha').innerHTML = html;
+            document.getElementById('fichaModal').style.display = 'flex';
+        }
+
+        function abrirFichaPersonal(pJson) {
+            const p = JSON.parse(pJson);
+            registroSeleccionadoActual = { tipo: 'Personal', data: p };
+
+            document.getElementById('modalTitulo').textContent = "Ficha de Identificación de Personal";
+            
+            const nombreCompleto = `${obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(p, ['apellido materno', 'materno'])}`;
+
+            const html = `
+                <div class="ficha-grid">
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Nombre del Docente / Personal</div>
+                        <div class="ficha-val">${nombreCompleto}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">CURP</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['clave curp', 'curp'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Filiación</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['filiacion', 'filiación'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Función Principal</div>
+                        <div class="ficha-val" style="color: #2b6cb0;">${obtenerValorCampo(p, ['funcion', 'función'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Formación Académica</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['formación académica', 'formacion academica'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Centro de Trabajo</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['nombre del centro', 'centro de trabajo'])} (Zona: ${obtenerValorCampo(p, ['zona'])})</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Plaza / Horas</div>
+                        <div class="ficha-val">Plaza: ${obtenerValorCampo(p, ['num. plaza'])} | Horas: ${obtenerValorCampo(p, ['hrs'])} hrs</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Fecha de Ingreso</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
+                    </div>
+                    <div class="ficha-item">
+                        <div class="ficha-label">Teléfono de Contacto</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['telefono', 'teléfono', 'celular'])}</div>
+                    </div>
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Correo Electrónico</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['e-mail', 'correo', 'email'])}</div>
+                    </div>
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Domicilio Particular</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['domicilio particular', 'domicilio'])}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modalContenidoFicha').innerHTML = html;
+            document.getElementById('fichaModal').style.display = 'flex';
+        }
+
+        function cerrarFichaModal(event) {
+            document.getElementById('fichaModal').style.display = 'none';
+        }
+
+        function cerrarFichaModalDirecto() {
+            document.getElementById('fichaModal').style.display = 'none';
+        }
+
+        function descargarFichaIndividual() {
+            if (!registroSeleccionadoActual) return;
+            const { tipo, data } = registroSeleccionadoActual;
+            
+            let contenidoTxt = `=== FICHA DE IDENTIFICACIÓN USAER (${tipo.toUpperCase()}) ===\n\n`;
+            for (let ключ in data) {
+                if (data[clave] !== undefined && data[clave] !== '') {
+                    contenidoTxt += `${clave.toUpperCase()}: ${data[clave]}\n`;
+                }
+            }
+
+            const blob = new Blob([contenidoTxt], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Ficha_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function exportarExcel() {
