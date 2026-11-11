@@ -159,60 +159,20 @@
 
     <!-- PANTALLA DE ACCESO (LOGIN) -->
     <div id="loginSection" class="login-card">
-        <h2 style="text-align: center; margin-bottom: 20px; color: #1a365d;">Acceso Institucional</h2>
+        <h2 style="text-align: center; margin-bottom: 20px; color: #1a365d;">Acceso Supervisión</h2>
         <div class="form-group" style="margin-bottom: 15px;">
-            <label>Selecciona Supervisión o Centro de Trabajo (CCT):</label>
+            <label>Selecciona la Supervisión de Zona:</label>
             <select id="loginUsuario">
-                <optgroup label="Supervisiones de Zona">
-                    <option value="sup1">Supervisor(a) - Zona 01</option>
-                    <option value="sup2">Supervisor(a) - Zona 02</option>
-                    <option value="sup3">Supervisor(a) - Zona 03</option>
-                    <option value="sup4">Supervisor(a) - Zona 04</option>
-                </optgroup>
-                <optgroup label="Zona 01 - Centros de Trabajo">
-                    <option value="10FUA0018M">CCT 10FUA0018M</option>
-                    <option value="10FUA0019L">CCT 10FUA0019L</option>
-                    <option value="10FUA0020A">CCT 10FUA0020A</option>
-                    <option value="10FUA0022Z">CCT 10FUA0022Z</option>
-                    <option value="10FUA0030H">CCT 10FUA0030H</option>
-                    <option value="10FUA0032F">CCT 10FUA0032F</option>
-                    <option value="10FUA0062Z">CCT 10FUA0062Z</option>
-                </optgroup>
-                <optgroup label="Zona 02 - Centros de Trabajo">
-                    <option value="10DML0007F">CCT 10DML0007F</option>
-                    <option value="10DML0028S">CCT 10DML0028S</option>
-                    <option value="10FUA0023Y">CCT 10FUA0023Y</option>
-                    <option value="10FUA0024X">CCT 10FUA0024X</option>
-                    <option value="10FUA0035C">CCT 10FUA0035C</option>
-                    <option value="10FUA0048X">CCT 10FUA0048X</option>
-                    <option value="10FUA0064Y">CCT 10FUA0064Y</option>
-                </optgroup>
-                <optgroup label="Zona 03 - Centros de Trabajo">
-                    <option value="10DML0018L">CCT 10DML0018L</option>
-                    <option value="10DML0029R">CCT 10DML0029R</option>
-                    <option value="10FUA0025W">CCT 10FUA0025W</option>
-                    <option value="10FUA0026V">CCT 10FUA0026V</option>
-                    <option value="10FUA0027U">CCT 10FUA0027U</option>
-                    <option value="10FUA0028T">CCT 10FUA0028T</option>
-                    <option value="10FUA0029S">CCT 10FUA0029S</option>
-                    <option value="10FUA0053S">CCT 10FUA0053S</option>
-                    <option value="10FUA0080P">CCT 10FUA0080P</option>
-                </optgroup>
-                <optgroup label="Zona 04 - Centros de Trabajo">
-                    <option value="10DML0010T">CCT 10DML0010T</option>
-                    <option value="10FUA0021Z">CCT 10FUA0021Z</option>
-                    <option value="10FUA0033E">CCT 10FUA0033E</option>
-                    <option value="10FUA0060B">CCT 10FUA0060B</option>
-                    <option value="10FUA0061A">CCT 10FUA0061A</option>
-                    <option value="10FUA0063Z">CCT 10FUA0063Z</option>
-                    <option value="10FUA0081O">CCT 10FUA0081O</option>
-                </optgroup>
+                <option value="sup1">Supervisor(a) - Zona 01</option>
+                <option value="sup2">Supervisor(a) - Zona 02</option>
+                <option value="sup3">Supervisor(a) - Zona 03</option>
+                <option value="sup4">Supervisor(a) - Zona 04</option>
             </select>
         </div>
         <div class="form-group" style="margin-bottom: 20px;">
-            <label>Clave Personal de Acceso:</label>
+            <label>Clave de Acceso:</label>
             <div class="password-container">
-                <input type="password" id="loginPass" placeholder="Ingresa tu clave (Ej: ZONA1-2026 o tu CCT)">
+                <input type="password" id="loginPass" placeholder="Ingresa tu clave (Genérica: LAGUNA2026)">
                 <button type="button" class="toggle-password" onclick="toggleMostrarPassword()" title="Mostrar/Ocultar Contraseña">👁️</button>
             </div>
         </div>
@@ -327,52 +287,15 @@
         const URL_PLANTILLA = 'https://script.google.com/macros/s/AKfycbyOhJA1VtJ11kd6-XG1o2KAdrZSFjX4caZJT7Y1FSpwUnf0gyEshoh32p1aCLqhX8KG/exec';
         const URL_ALUMNOS = 'https://script.google.com/macros/s/AKfycbx340wj_KV-bbgruvbMVtT2i7gU4ycLoDoZBzVKUJ8DMn9lBLFVsJg_E3NXfUufvg/exec';
 
-        const CATALOGO_ZONAS = {
-            "Zona 01": ["10FUA0018M", "10FUA0019L", "10FUA0020A", "10FUA0022Z", "10FUA0030H", "10FUA0032F", "10FUA0062Z"],
-            "Zona 02": ["10DML0007F", "10DML0028S", "10FUA0023Y", "10FUA0024X", "10FUA0035C", "10FUA0048X", "10FUA0064Y"],
-            "Zona 03": ["10DML0018L", "10DML0029R", "10FUA0025W", "10FUA0026V", "10FUA0027U", "10FUA0028T", "10FUA0029S", "10FUA0053S", "10FUA0080P"],
-            "Zona 04": ["10DML0010T", "10FUA0021Z", "10FUA0033E", "10FUA0060B", "10FUA0061A", "10FUA0063Z", "10FUA0081O"]
-        };
+        // Clave genérica y nivel configurados para las supervisiones
+        const CLAVE_GENERICA = "LAGUNA2026";
+        const ROL_NIVEL = "Educación Especial";
 
         const BASE_USUARIOS = {
-            sup1: { pass: 'ZONA1-2026', nombre: 'Supervisor(a) Zona 01', rol: 'Supervisor', zona: 'Zona 01' },
-            sup2: { pass: 'ZONA2-2026', nombre: 'Supervisor(a) Zona 02', rol: 'Supervisor', zona: 'Zona 02' },
-            sup3: { pass: 'ZONA3-2026', nombre: 'Supervisor(a) Zona 03', rol: 'Supervisor', zona: 'Zona 03' },
-            sup4: { pass: 'ZONA4-2026', nombre: 'Supervisor(a) Zona 04', rol: 'Supervisor', zona: 'Zona 04' },
-
-            "10FUA0018M": { pass: '10FUA0018M', nombre: 'Dirección CCT 10FUA0018M', rol: 'Director', centro: '10FUA0018M', zona: 'Zona 01' },
-            "10FUA0019L": { pass: '10FUA0019L', nombre: 'Dirección CCT 10FUA0019L', rol: 'Director', centro: '10FUA0019L', zona: 'Zona 01' },
-            "10FUA0020A": { pass: '10FUA0020A', nombre: 'Dirección CCT 10FUA0020A', rol: 'Director', centro: '10FUA0020A', zona: 'Zona 01' },
-            "10FUA0022Z": { pass: '10FUA0022Z', nombre: 'Dirección CCT 10FUA0022Z', rol: 'Director', centro: '10FUA0022Z', zona: 'Zona 01' },
-            "10FUA0030H": { pass: '10FUA0030H', nombre: 'Dirección CCT 10FUA0030H', rol: 'Director', centro: '10FUA0030H', zona: 'Zona 01' },
-            "10FUA0032F": { pass: '10FUA0032F', nombre: 'Dirección CCT 10FUA0032F', rol: 'Director', centro: '10FUA0032F', zona: 'Zona 01' },
-            "10FUA0062Z": { pass: '10FUA0062Z', nombre: 'Dirección CCT 10FUA0062Z', rol: 'Director', centro: '10FUA0062Z', zona: 'Zona 01' },
-
-            "10DML0007F": { pass: '10DML0007F', nombre: 'Dirección CCT 10DML0007F', rol: 'Director', centro: '10DML0007F', zona: 'Zona 02' },
-            "10DML0028S": { pass: '10DML0028S', nombre: 'Dirección CCT 10DML0028S', rol: 'Director', centro: '10DML0028S', zona: 'Zona 02' },
-            "10FUA0023Y": { pass: '10FUA0023Y', nombre: 'Dirección CCT 10FUA0023Y', rol: 'Director', centro: '10FUA0023Y', zona: 'Zona 02' },
-            "10FUA0024X": { pass: '10FUA0024X', nombre: 'Dirección CCT 10FUA0024X', rol: 'Director', centro: '10FUA0024X', zona: 'Zona 02' },
-            "10FUA0035C": { pass: '10FUA0035C', nombre: 'Dirección CCT 10FUA0035C', rol: 'Director', centro: '10FUA0035C', zona: 'Zona 02' },
-            "10FUA0048X": { pass: '10FUA0048X', nombre: 'Dirección CCT 10FUA0048X', rol: 'Director', centro: '10FUA0048X', zona: 'Zona 02' },
-            "10FUA0064Y": { pass: '10FUA0064Y', nombre: 'Dirección CCT 10FUA0064Y', rol: 'Director', centro: '10FUA0064Y', zona: 'Zona 02' },
-
-            "10DML0018L": { pass: '10DML0018L', nombre: 'Dirección CCT 10DML0018L', rol: 'Director', centro: '10DML0018L', zona: 'Zona 03' },
-            "10DML0029R": { pass: '10DML0029R', nombre: 'Dirección CCT 10DML0029R', rol: 'Director', centro: '10DML0029R', zona: 'Zona 03' },
-            "10FUA0025W": { pass: '10FUA0025W', nombre: 'Dirección CCT 10FUA0025W', rol: 'Director', centro: '10FUA0025W', zona: 'Zona 03' },
-            "10FUA0026V": { pass: '10FUA0026V', nombre: 'Dirección CCT 10FUA0026V', rol: 'Director', centro: '10FUA0026V', zona: 'Zona 03' },
-            "10FUA0027U": { pass: '10FUA0027U', nombre: 'Dirección CCT 10FUA0027U', rol: 'Director', centro: '10FUA0027U', zona: 'Zona 03' },
-            "10FUA0028T": { pass: '10FUA0028T', nombre: 'Dirección CCT 10FUA0028T', rol: 'Director', centro: '10FUA0028T', zona: 'Zona 03' },
-            "10FUA0029S": { pass: '10FUA0029S', nombre: 'Dirección CCT 10FUA0029S', rol: 'Director', centro: '10FUA0029S', zona: 'Zona 03' },
-            "10FUA0053S": { pass: '10FUA0053S', nombre: 'Dirección CCT 10FUA0053S', rol: 'Director', centro: '10FUA0053S', zona: 'Zona 03' },
-            "10FUA0080P": { pass: '10FUA0080P', nombre: 'Dirección CCT 10FUA0080P', rol: 'Director', centro: '10FUA0080P', zona: 'Zona 03' },
-
-            "10DML0010T": { pass: '10DML0010T', nombre: 'Dirección CCT 10DML0010T', rol: 'Director', centro: '10DML0010T', zona: 'Zona 04' },
-            "10FUA0021Z": { pass: '10FUA0021Z', nombre: 'Dirección CCT 10FUA0021Z', rol: 'Director', centro: '10FUA0021Z', zona: 'Zona 04' },
-            "10FUA0033E": { pass: '10FUA0033E', nombre: 'Dirección CCT 10FUA0033E', rol: 'Director', centro: '10FUA0033E', zona: 'Zona 04' },
-            "10FUA0060B": { pass: '10FUA0060B', nombre: 'Dirección CCT 10FUA0060B', rol: 'Director', centro: '10FUA0060B', zona: 'Zona 04' },
-            "10FUA0061A": { pass: '10FUA0061A', nombre: 'Dirección CCT 10FUA0061A', rol: 'Director', centro: '10FUA0061A', zona: 'Zona 04' },
-            "10FUA0063Z": { pass: '10FUA0063Z', nombre: 'Dirección CCT 10FUA0063Z', rol: 'Director', centro: '10FUA0063Z', zona: 'Zona 04' },
-            "10FUA0081O": { pass: '10FUA0081O', nombre: 'Dirección CCT 10FUA0081O', rol: 'Director', centro: '10FUA0081O', zona: 'Zona 04' }
+            sup1: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 01', rol: ROL_NIVEL, zona: 'Zona 01' },
+            sup2: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 02', rol: ROL_NIVEL, zona: 'Zona 02' },
+            sup3: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 03', rol: ROL_NIVEL, zona: 'Zona 03' },
+            sup4: { pass: CLAVE_GENERICA, nombre: 'Supervisor(a) Zona 04', rol: ROL_NIVEL, zona: 'Zona 04' }
         };
 
         let usuarioSesion = JSON.parse(localStorage.getItem('usaer_sesion') || 'null');
@@ -404,12 +327,12 @@
             const passVal = document.getElementById('loginPass').value.trim();
             const userObj = BASE_USUARIOS[userKey];
 
-            if (userObj && userObj.pass === passVal) {
+            if (userObj && (userObj.pass === passVal || passVal === CLAVE_GENERICA)) {
                 usuarioSesion = userObj;
                 localStorage.setItem('usaer_sesion', JSON.stringify(usuarioSesion));
                 iniciarModoApp();
             } else {
-                alert('Clave de acceso incorrecta para el usuario seleccionado.');
+                alert('Clave de acceso incorrecta. Utiliza la clave genérica.');
             }
         }
 
@@ -471,7 +394,7 @@
         }
 
         function formatearFecha(valor) {
-            if (!valor) return 'N/A';
+            if (!valor) return '';
             const strVal = valor.toString().trim();
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
@@ -496,7 +419,11 @@
                     return limpiaK === limpiaN;
                 });
                 if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta] !== '') {
-                    return obj[llaveExacta].toString().trim();
+                    const valorStr = obj[llaveExacta].toString().trim();
+                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento')) {
+                        return formatearFecha(valorStr);
+                    }
+                    return valorStr;
                 }
             }
 
@@ -508,7 +435,11 @@
                     return limpiaK.includes(limpiaN);
                 });
                 if (llaveEncontrada && obj[llaveEncontrada] !== undefined && obj[llaveEncontrada] !== null && obj[llaveEncontrada] !== '') {
-                    return obj[llaveEncontrada].toString().trim();
+                    const valorStr = obj[llaveEncontrada].toString().trim();
+                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento')) {
+                        return formatearFecha(valorStr);
+                    }
+                    return valorStr;
                 }
             }
             return '';
