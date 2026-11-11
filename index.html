@@ -141,7 +141,7 @@
         .stat-title { font-size: 0.8rem; color: #718096; font-weight: bold; text-transform: uppercase; }
         .stat-value { font-size: 1.4rem; color: #2d3748; font-weight: bold; margin-top: 5px; }
 
-        /* Estilo tipo Google Sheets (Cuadriculado, centrado y profesional fijo) */
+        /* Estilo tipo Google Sheets (Cuadriculado y centrado) */
         table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: #ffffff; }
         th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; cursor: pointer; }
         th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; cursor: default; }
@@ -155,7 +155,7 @@
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 
-        /* Ventana Modal de Ficha de Identificación */
+        /* Ventana Modal de Ficha de Identificación / Técnica */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -169,7 +169,7 @@
         .modal-card {
             background: white;
             width: 100%;
-            max-width: 750px;
+            max-width: 800px;
             border-radius: 10px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             overflow: hidden;
@@ -189,6 +189,7 @@
             padding: 25px;
             overflow-y: auto;
             font-size: 0.9rem;
+            background: #fff;
         }
         .ficha-grid {
             display: grid;
@@ -204,6 +205,15 @@
         .ficha-item.full { grid-column: span 2; }
         .ficha-label { font-size: 0.75rem; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
         .ficha-val { font-size: 0.95rem; color: #2d3748; font-weight: 600; }
+        
+        .plaza-box {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
         .modal-footer {
             padding: 15px 20px;
             background: #f1f5f9;
@@ -317,7 +327,7 @@
             <!-- 2. SECCIÓN DE PLANTILLA DE PERSONAL -->
             <div id="personalSection" class="tab-content" style="display: none;">
                 <div class="card">
-                    <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha de Identificación)</span></h3>
+                    <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha Técnica Completa con todas sus Plazas)</span></h3>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
                     </div>
@@ -364,18 +374,18 @@
         </div>
     </div>
 
-    <!-- VENTANA MODAL DE FICHA DE IDENTIFICACIÓN -->
+    <!-- VENTANA MODAL DE FICHA TÉCNICA / IDENTIFICACIÓN -->
     <div id="fichaModal" class="modal-overlay" onclick="cerrarFichaModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3 id="modalTitulo">Ficha de Identificación</h3>
+                <h3 id="modalTitulo">Ficha Técnica de Personal</h3>
                 <button class="btn-logout" onclick="cerrarFichaModalDirecto()">✕ Cerrar</button>
             </div>
             <div class="modal-body" id="modalContenidoFicha">
                 <!-- Se inyecta dinámicamente -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="descargarFichaIndividual()">📥 Descargar Ficha PDF/Texto</button>
+                <button class="btn btn-primary" onclick="descargarFichaCompleta()">📥 Descargar Ficha Técnica Oficial (TXT/Impresión)</button>
                 <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
             </div>
         </div>
@@ -768,11 +778,32 @@
 
         function abrirFichaPersonal(pJson) {
             const p = JSON.parse(pJson);
-            registroSeleccionadoActual = { tipo: 'Personal', data: p };
+            const curpSeleccionada = obtenerValorCampo(p, ['clave curp', 'curp']).toUpperCase();
+            
+            // Buscar todas las plazas/registros que correspondan a este mismo docente (por CURP)
+            const plazasDocente = dbPersonal.filter(item => {
+                const c = obtenerValorCampo(item, ['clave curp', 'curp']).toUpperCase();
+                return c === curpSeleccionada && curpSeleccionada !== '';
+            });
 
-            document.getElementById('modalTitulo').textContent = "Ficha de Identificación de Personal";
+            registroSeleccionadoActual = { tipo: 'Personal', data: p, plazas: plazasDocente.length > 0 ? plazasDocente : [p] };
+
+            document.getElementById('modalTitulo').textContent = "Ficha Técnica y Plazas del Personal";
             
             const nombreCompleto = `${obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(p, ['apellido materno', 'materno'])}`;
+
+            let plazasHtml = '';
+            (registroSeleccionadoActual.plazas).forEach((plaza, index) => {
+                plazasHtml += `
+                    <div class="plaza-box">
+                        <strong>Plaza #${index + 1}</strong><br>
+                        • <strong>Núm. Plaza:</strong> ${obtenerValorCampo(plaza, ['num. plaza'])} | <strong>Código:</strong> ${obtenerValorCampo(plaza, ['código', 'codigo'])}<br>
+                        • <strong>Horas:</strong> ${obtenerValorCampo(plaza, ['hrs'])} hrs | <strong>Categoría:</strong> ${obtenerValorCampo(plaza, ['categ.'])}<br>
+                        • <strong>Centro de Trabajo:</strong> ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])} (Zona: ${obtenerValorCampo(plaza, ['zona'])})<br>
+                        • <strong>Función:</strong> ${obtenerValorCampo(plaza, ['funcion', 'función'])} | <strong>Situación:</strong> ${obtenerValorCampo(plaza, ['situación', 'situacion'])}
+                    </div>
+                `;
+            });
 
             const html = `
                 <div class="ficha-grid">
@@ -782,37 +813,29 @@
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">CURP</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['clave curp', 'curp'])}</div>
+                        <div class="ficha-val">${curpSeleccionada}</div>
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Filiación</div>
                         <div class="ficha-val">${obtenerValorCampo(p, ['filiacion', 'filiación'])}</div>
                     </div>
                     <div class="ficha-item">
-                        <div class="ficha-label">Función Principal</div>
-                        <div class="ficha-val" style="color: #2b6cb0;">${obtenerValorCampo(p, ['funcion', 'función'])}</div>
-                    </div>
-                    <div class="ficha-item">
                         <div class="ficha-label">Formación Académica</div>
                         <div class="ficha-val">${obtenerValorCampo(p, ['formación académica', 'formacion academica'])}</div>
                     </div>
                     <div class="ficha-item">
-                        <div class="ficha-label">Centro de Trabajo</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['nombre del centro', 'centro de trabajo'])} (Zona: ${obtenerValorCampo(p, ['zona'])})</div>
+                        <div class="ficha-label">Estado Civil / Fechas</div>
+                        <div class="ficha-val">Ingreso: ${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
                     </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Plaza / Horas</div>
-                        <div class="ficha-val">Plaza: ${obtenerValorCampo(p, ['num. plaza'])} | Horas: ${obtenerValorCampo(p, ['hrs'])} hrs</div>
-                    </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Fecha de Ingreso</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
+                    <div class="ficha-item full">
+                        <div class="ficha-label">Detalle de Plazas y Claves Presupuestales Registradas (${registroSeleccionadoActual.plazas.length})</div>
+                        ${plazasHtml}
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Teléfono de Contacto</div>
                         <div class="ficha-val">${obtenerValorCampo(p, ['telefono', 'teléfono', 'celular'])}</div>
                     </div>
-                    <div class="ficha-item full">
+                    <div class="ficha-item">
                         <div class="ficha-label">Correo Electrónico</div>
                         <div class="ficha-val">${obtenerValorCampo(p, ['e-mail', 'correo', 'email'])}</div>
                     </div>
@@ -834,14 +857,41 @@
             document.getElementById('fichaModal').style.display = 'none';
         }
 
-        function descargarFichaIndividual() {
+        function descargarFichaCompleta() {
             if (!registroSeleccionadoActual) return;
-            const { tipo, data } = registroSeleccionadoActual;
+            const { tipo, data, plazas } = registroSeleccionadoActual;
             
-            let contenidoTxt = `=== FICHA DE IDENTIFICACIÓN USAER (${tipo.toUpperCase()}) ===\n\n`;
-            for (let ключ in data) {
-                if (data[clave] !== undefined && data[clave] !== '') {
-                    contenidoTxt += `${clave.toUpperCase()}: ${data[clave]}\n`;
+            let contenidoTxt = `==================================================\n`;
+            contenidoTxt += `   FICHA TÉCNICA OFICIAL - EDUCACIÓN ESPECIAL     \n`;
+            contenidoTxt += `==================================================\n\n`;
+
+            if (tipo === 'Personal') {
+                const nombreCompleto = `${obtenerValorCampo(data, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(data, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(data, ['apellido materno', 'materno'])}`;
+                contenidoTxt += `NOMBRE: ${nombreCompleto}\n`;
+                contenidoTxt += `CURP: ${obtenerValorCampo(data, ['clave curp', 'curp'])}\n`;
+                contenidoTxt += `FILIACIÓN: ${obtenerValorCampo(data, ['filiacion', 'filiación'])}\n`;
+                contenidoTxt += `FORMACIÓN ACADÉMICA: ${obtenerValorCampo(data, ['formación académica', 'formacion academica'])}\n`;
+                contenidoTxt += `TELÉFONO: ${obtenerValorCampo(data, ['telefono', 'teléfono', 'celular'])}\n`;
+                contenidoTxt += `CORREO: ${obtenerValorCampo(data, ['e-mail', 'correo', 'email'])}\n`;
+                contenidoTxt += `DOMICILIO: ${obtenerValorCampo(data, ['domicilio particular', 'domicilio'])}\n\n`;
+                
+                contenidoTxt += `--- PLAZAS Y CLAVES PRESUPUESTALES (${plazas.length}) ---\n`;
+                plazas.forEach((plaza, idx) => {
+                    contenidoTxt += `\n[ PLAZA NÚMERO ${idx + 1} ]\n`;
+                    contenidoTxt += `  - Núm. Plaza: ${obtenerValorCampo(plaza, ['num. plaza'])}\n`;
+                    contenidoTxt += `  - Código: ${obtenerValorCampo(plaza, ['código', 'codigo'])}\n`;
+                    contenidoTxt += `  - Horas: ${obtenerValorCampo(plaza, ['hrs'])}\n`;
+                    contenidoTxt += `  - Categoría: ${obtenerValorCampo(plaza, ['categ.'])}\n`;
+                    contenidoTxt += `  - Centro de Trabajo: ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])}\n`;
+                    contenidoTxt += `  - Zona: ${obtenerValorCampo(plaza, ['zona'])}\n`;
+                    contenidoTxt += `  - Función: ${obtenerValorCampo(plaza, ['funcion', 'función'])}\n`;
+                    contenidoTxt += `  - Situación: ${obtenerValorCampo(plaza, ['situación', 'situacion'])}\n`;
+                });
+            } else {
+                for (let key in data) {
+                    if (data[key] !== undefined && data[key] !== '') {
+                        contenidoTxt += `${key.toUpperCase()}: ${data[key]}\n`;
+                    }
                 }
             }
 
@@ -849,7 +899,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Ficha_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
+            a.download = `Ficha_Tecnica_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -888,11 +938,6 @@
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Concentrado Alumnos");
-            XLSX.writeFile(wb, "Ecosistema_USAER_Alumnos_2026_2027.xlsx");
-        }
-    </script>
-</body>
-</html>
             XLSX.writeFile(wb, "Ecosistema_USAER_Alumnos_2026_2027.xlsx");
         }
     </script>
