@@ -169,7 +169,7 @@
         .modal-card {
             background: white;
             width: 100%;
-            max-width: 800px;
+            max-width: 850px;
             border-radius: 10px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             overflow: hidden;
@@ -209,9 +209,20 @@
         .plaza-box {
             background: #ebf8ff;
             border: 1px solid #90cdf4;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
+            margin-top: 10px;
+        }
+        .plaza-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             margin-top: 8px;
+            font-size: 0.85rem;
+            background: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #bee3f8;
         }
 
         .modal-footer {
@@ -221,6 +232,33 @@
             justify-content: flex-end;
             gap: 10px;
             border-top: 1px solid #e2e8f0;
+        }
+
+        /* DISEÑO DE CREDENCIAL IMPRIMIBLE PARA ALUMNOS */
+        .credencial-preview {
+            border: 2px solid #1a365d;
+            border-radius: 12px;
+            padding: 20px;
+            background: #fff;
+            max-width: 450px;
+            margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .credencial-header {
+            background: #1a365d;
+            color: white;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
+            margin: -20px -20px 15px -20px;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #modalContenidoFicha, #modalContenidoFicha * { visibility: visible; }
+            #fichaModal { background: white; position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex !important; }
+            .modal-card { box-shadow: none; max-width: 100%; height: 100%; }
+            .modal-header, .modal-footer { display: none; }
         }
     </style>
 </head>
@@ -289,7 +327,7 @@
             <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS) -->
             <div id="alumnosSection" class="tab-content">
                 <div class="card">
-                    <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha de Identificación)</span></h3>
+                    <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Credencial / Ficha Escolar)</span></h3>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <input type="text" id="searchAlumno" oninput="debounceBusquedaAlumnos()" placeholder="🔍 Buscar por zona, centro, alumno, CURP, escuela o condición...">
                     </div>
@@ -374,18 +412,18 @@
         </div>
     </div>
 
-    <!-- VENTANA MODAL DE FICHA TÉCNICA / IDENTIFICACIÓN -->
+    <!-- VENTANA MODAL DE FICHA TÉCNICA / CREDENCIAL -->
     <div id="fichaModal" class="modal-overlay" onclick="cerrarFichaModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3 id="modalTitulo">Ficha Técnica</h3>
+                <h3 id="modalTitulo">Ficha e Identificación</h3>
                 <button class="btn-logout" onclick="cerrarFichaModalDirecto()">✕ Cerrar</button>
             </div>
             <div class="modal-body" id="modalContenidoFicha">
                 <!-- Se inyecta dinámicamente -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="descargarFichaOficial()">📥 Descargar Ficha / Credencial (TXT)</button>
+                <button class="btn btn-primary" onclick="imprimirCredencialOFicha()">🖨️ Imprimir / Guardar como PDF</button>
                 <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
             </div>
         </div>
@@ -730,45 +768,35 @@
             const al = JSON.parse(alJson);
             registroSeleccionadoActual = { tipo: 'Alumno', data: al };
 
-            document.getElementById('modalTitulo').textContent = "Ficha de Identificación del Alumno";
+            document.getElementById('modalTitulo').textContent = "Credencial e Identificación del Alumno";
             
             const html = `
-                <div class="ficha-grid">
-                    <div class="ficha-item full">
-                        <div class="ficha-label">Nombre del Alumno</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                <div class="credencial-preview">
+                    <div class="credencial-header">
+                        <h4 style="font-size: 0.9rem; letter-spacing: 1px;">SECRETARÍA DE EDUCACIÓN DEL ESTADO DE DURANGO</h4>
+                        <h5 style="font-size: 0.8rem; font-weight: normal; margin-top: 3px;">EDUCACIÓN ESPECIAL - USAER</h5>
                     </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">CURP</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['curp'])}</div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.75rem; color: #718096; font-weight: bold;">NOMBRE DEL ALUMNO(A)</div>
+                        <div style="font-size: 1.1rem; color: #1a365d; font-weight: bold; margin-top: 2px;">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
                     </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Sexo</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['sexo'])}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; text-align: left; background: #f7fafc; padding: 8px; border-radius: 6px;">
+                        <div>
+                            <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">CURP</div>
+                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampo(al, ['curp'])}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">NIVEL / GRADO</div>
+                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampo(al, ['nivel'])} - ${obtenerValorCampo(al, ['grado/taller', 'grado', 'taller'])}</div>
+                        </div>
                     </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Nivel Educativo</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['nivel'])}</div>
+                    <div style="text-align: left; background: #ebf8ff; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 0.8rem;">
+                        <strong>Escuela:</strong> ${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}<br>
+                        <strong>Centro USAER:</strong> ${obtenerValorCampo(al, ['centro'])} (Zona ${obtenerValorCampo(al, ['zona'])})<br>
+                        <strong>Maestro(a) de Apoyo:</strong> ${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}
                     </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Grado y Taller</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['grado/taller', 'grado', 'taller'])}</div>
-                    </div>
-                    <div class="ficha-item full">
-                        <div class="ficha-label">Condición / Diagnóstico</div>
-                        <div class="ficha-val" style="color: #2b6cb0;">${obtenerValorCampo(al, ['condicion', 'diagnostico'])}</div>
-                    </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Zona / Centro de Trabajo</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['zona'])} - ${obtenerValorCampo(al, ['centro'])} (${obtenerValorCampo(al, ['clave'])})</div>
-                    </div>
-                    <div class="ficha-item">
-                        <div class="ficha-label">Escuela de Adscripción</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}</div>
-                    </div>
-                    <div class="ficha-item full">
-                        <div class="ficha-label">Maestro(a) de Apoyo USAER</div>
-                        <div class="ficha-val">${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}</div>
+                    <div style="margin-top: 10px; font-size: 0.75rem; color: #e53e3e; font-weight: bold;">
+                        CONDICIÓN: ${obtenerValorCampo(al, ['condicion', 'diagnostico']) || 'REGULAR'}
                     </div>
                 </div>
             `;
@@ -795,11 +823,19 @@
             (registroSeleccionadoActual.plazas).forEach((plaza, index) => {
                 plazasHtml += `
                     <div class="plaza-box">
-                        <strong>Plaza #${index + 1}</strong><br>
-                        • <strong>Núm. Plaza:</strong> ${obtenerValorCampo(plaza, ['num. plaza'])} | <strong>Código:</strong> ${obtenerValorCampo(plaza, ['código', 'codigo'])}<br>
-                        • <strong>Horas:</strong> ${obtenerValorCampo(plaza, ['hrs'])} hrs | <strong>Categoría:</strong> ${obtenerValorCampo(plaza, ['categ.'])}<br>
-                        • <strong>Centro de Trabajo:</strong> ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])} (Zona: ${obtenerValorCampo(plaza, ['zona'])})<br>
-                        • <strong>Función:</strong> ${obtenerValorCampo(plaza, ['funcion', 'función'])} | <strong>Situación:</strong> ${obtenerValorCampo(plaza, ['situación', 'situacion'])}
+                        <strong>Plaza / Clave Presupuestal #${index + 1}</strong>
+                        <div class="plaza-grid">
+                            <div><strong>DEP:</strong> ${obtenerValorCampo(plaza, ['dep']) || 'N/A'}</div>
+                            <div><strong>UNID:</strong> ${obtenerValorCampo(plaza, ['unid']) || 'N/A'}</div>
+                            <div><strong>SUB UNID:</strong> ${obtenerValorCampo(plaza, ['sub unid']) || 'N/A'}</div>
+                            <div><strong>CATEG:</strong> ${obtenerValorCampo(plaza, ['categ.']) || 'N/A'}</div>
+                            <div><strong>HRS:</strong> ${obtenerValorCampo(plaza, ['hrs']) || 'N/A'}</div>
+                            <div><strong>NUM. PLAZA:</strong> ${obtenerValorCampo(plaza, ['num. plaza']) || 'N/A'}</div>
+                        </div>
+                        <div style="margin-top: 6px; font-size: 0.85rem; color: #4a5568;">
+                            • <strong>Centro de Trabajo:</strong> ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])} (Zona: ${obtenerValorCampo(plaza, ['zona'])})<br>
+                            • <strong>Función:</strong> ${obtenerValorCampo(plaza, ['funcion', 'función'])} | <strong>Situación:</strong> ${obtenerValorCampo(plaza, ['situación', 'situacion'])}
+                        </div>
                     </div>
                 `;
             });
@@ -823,11 +859,11 @@
                         <div class="ficha-val">${obtenerValorCampo(p, ['formación académica', 'formacion academica'])}</div>
                     </div>
                     <div class="ficha-item">
-                        <div class="ficha-label">Estado Civil / Fechas</div>
-                        <div class="ficha-val">Ingreso: ${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
+                        <div class="ficha-label">Fecha de Ingreso</div>
+                        <div class="ficha-val">${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
                     </div>
                     <div class="ficha-item full">
-                        <div class="ficha-label">Desglose de Plazas y Claves Presupuestales (${registroSeleccionadoActual.plazas.length})</div>
+                        <div class="ficha-label">Desglose de Claves Presupuestales y Plazas (${registroSeleccionadoActual.plazas.length})</div>
                         ${plazasHtml}
                     </div>
                     <div class="ficha-item">
@@ -856,70 +892,8 @@
             document.getElementById('fichaModal').style.display = 'none';
         }
 
-        function descargarFichaOficial() {
-            if (!registroSeleccionadoActual) {
-                alert("No hay ningún registro seleccionado.");
-                return;
-            }
-            
-            const { tipo, data, plazas } = registroSeleccionadoActual;
-            
-            let contenidoTxt = `==================================================\n`;
-            contenidoTxt += `   FICHA DE IDENTIFICACIÓN / CREDENCIAL USAER     \n`;
-            contenidoTxt += `==================================================\n\n`;
-
-            if (tipo === 'Alumno') {
-                contenidoTxt += `--- DATOS DEL ALUMNO ---\n`;
-                contenidoTxt += `NOMBRE: ${obtenerValorCampo(data, ['nombre del alumno', 'nombre', 'alumno'])}\n`;
-                contenidoTxt += `CURP: ${obtenerValorCampo(data, ['curp'])}\n`;
-                contenidoTxt += `SEXO: ${obtenerValorCampo(data, ['sexo'])}\n`;
-                contenidoTxt += `NIVEL EDUCATIVO: ${obtenerValorCampo(data, ['nivel'])}\n`;
-                contenidoTxt += `GRADO Y TALLER: ${obtenerValorCampo(data, ['grado/taller', 'grado', 'taller'])}\n`;
-                contenidoTxt += `CONDICIÓN / DIAGNÓSTICO: ${obtenerValorCampo(data, ['condicion', 'diagnostico'])}\n\n`;
-                contenidoTxt += `--- ADSCRIPCIÓN ---\n`;
-                contenidoTxt += `ZONA: ${obtenerValorCampo(data, ['zona'])}\n`;
-                contenidoTxt += `CENTRO: ${obtenerValorCampo(data, ['centro'])} (${obtenerValorCampo(data, ['clave'])})\n`;
-                contenidoTxt += `ESCUELA DE PROCEDENCIA: ${obtenerValorCampo(data, ['nombre de la escuela', 'escuela'])}\n`;
-                contenidoTxt += `MAESTRO(A) DE APOYO: ${obtenerValorCampo(data, ['maestro(a) de apoyo', 'apoyo'])}\n`;
-            } else {
-                const nombreCompleto = `${obtenerValorCampo(data, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(data, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(data, ['apellido materno', 'materno'])}`;
-                contenidoTxt += `NOMBRE: ${nombreCompleto}\n`;
-                contenidoTxt += `CURP: ${obtenerValorCampo(data, ['clave curp', 'curp'])}\n`;
-                contenidoTxt += `FILIACIÓN: ${obtenerValorCampo(data, ['filiacion', 'filiación'])}\n`;
-                contenidoTxt += `FORMACIÓN ACADÉMICA: ${obtenerValorCampo(data, ['formación académica', 'formacion academica'])}\n`;
-                contenidoTxt += `TELÉFONO: ${obtenerValorCampo(data, ['telefono', 'teléfono', 'celular'])}\n`;
-                contenidoTxt += `CORREO: ${obtenerValorCampo(data, ['e-mail', 'correo', 'email'])}\n`;
-                contenidoTxt += `DOMICILIO: ${obtenerValorCampo(data, ['domicilio particular', 'domicilio'])}\n\n`;
-                
-                const listaPlazas = plazas || [data];
-                contenidoTxt += `--- PLAZAS Y CLAVES PRESUPUESTALES (${listaPlazas.length}) ---\n`;
-                listaPlazas.forEach((plaza, idx) => {
-                    contenidoTxt += `\n[ PLAZA NÚMERO ${idx + 1} ]\n`;
-                    contenidoTxt += `  - Núm. Plaza: ${obtenerValorCampo(plaza, ['num. plaza'])}\n`;
-                    contenidoTxt += `  - Código: ${obtenerValorCampo(plaza, ['código', 'codigo'])}\n`;
-                    contenidoTxt += `  - Horas: ${obtenerValorCampo(plaza, ['hrs'])}\n`;
-                    contenidoTxt += `  - Categoría: ${obtenerValorCampo(plaza, ['categ.'])}\n`;
-                    contenidoTxt += `  - Centro de Trabajo: ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])}\n`;
-                    contenidoTxt += `  - Zona: ${obtenerValorCampo(plaza, ['zona'])}\n`;
-                    contenidoTxt += `  - Función: ${obtenerValorCampo(plaza, ['funcion', 'función'])}\n`;
-                    contenidoTxt += `  - Situación: ${obtenerValorCampo(plaza, ['situación', 'situacion'])}\n`;
-                });
-            }
-
-            try {
-                const blob = new Blob([contenidoTxt], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Ficha_Identificacion_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error("Error al generar el archivo:", error);
-                alert("No se pudo generar el archivo de descarga.");
-            }
+        function imprimirCredencialOFicha() {
+            window.print();
         }
 
         function exportarExcel() {
@@ -942,7 +916,7 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
