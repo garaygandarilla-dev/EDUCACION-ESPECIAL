@@ -155,7 +155,7 @@
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 
-        /* Ventana Modal de Ficha Técnica / Identificación */
+        /* Ventana Modal de Ficha Técnica / Credencial */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -253,10 +253,23 @@
             margin: -20px -20px 15px -20px;
         }
 
-        /* CONFIGURACIÓN EXCLUSIVA PARA IMPRESIÓN Y PDF */
+        /* CONFIGURACIÓN ESTRICTA PARA IMPRESIÓN (EVITA PÁGINAS EN BLANCO) */
         @media print {
-            body * { visibility: hidden; }
-            #fichaModal, #fichaModal * { visibility: visible; }
+            body * {
+                visibility: hidden;
+            }
+            #modalContenidoFicha, #modalContenidoFicha * {
+                visibility: visible;
+            }
+            #modalContenidoFicha {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 10px;
+                background: white;
+            }
             #fichaModal {
                 position: absolute;
                 left: 0;
@@ -264,17 +277,21 @@
                 width: 100%;
                 height: 100%;
                 background: white !important;
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
+                display: block !important;
+                overflow: visible !important;
             }
             .modal-card {
                 box-shadow: none !important;
                 max-width: 100% !important;
+                width: 100% !important;
                 height: auto !important;
                 border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .modal-header, .modal-footer { display: none !important; }
+            .modal-header, .modal-footer {
+                display: none !important;
+            }
         }
     </style>
 </head>
