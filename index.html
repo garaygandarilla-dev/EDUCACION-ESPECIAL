@@ -228,12 +228,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
         .modal-body {
             padding: 25px;
             overflow-y: auto;
             font-size: 0.9rem;
             background: var(--card-bg);
+            flex-grow: 1;
         }
         .ficha-grid {
             display: grid;
@@ -276,6 +278,8 @@
             justify-content: flex-end;
             gap: 10px;
             border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            z-index: 10;
         }
 
         /* DISEÑO DE CREDENCIAL IMPRIMIBLE PARA ALUMNOS */
@@ -402,7 +406,7 @@
         </div>
 
         <div class="container">
-            <!-- PANEL DE INDICADORES (DASHBOARD) CON ESTADÍSTICAS Y ALERTAS -->
+            <!-- PANEL DE INDICADORES (DASHBOARD) -->
             <div class="dashboard-grid">
                 <div class="stat-card">
                     <div class="stat-title">Total Alumnos Atendidos</div>
@@ -433,12 +437,11 @@
                 </div>
             </div>
 
-            <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS CON FILTROS AVANZADOS) -->
+            <!-- 1. SECCIÓN DE ALUMNOS -->
             <div id="alumnosSection" class="tab-content">
                 <div class="card">
                     <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Credencial / Ficha Escolar)</span></h3>
                     
-                    <!-- FILTROS AVANZADOS POR ZONA Y CENTRO -->
                     <div class="filters-grid">
                         <div class="form-group">
                             <label>Filtrar por Zona Escolar:</label>
@@ -588,7 +591,6 @@
                 document.getElementById('loginSection').style.display = 'block';
             }
             
-            // Cargar tema guardado
             const temaGuardado = localStorage.getItem('usaer_theme') || 'light';
             document.body.setAttribute('data-theme', temaGuardado);
             actualizarTextoBotonTema(temaGuardado);
@@ -609,7 +611,6 @@
             }
         }
 
-        // Cierre con tecla ESC
         document.addEventListener('keydown', function(event) {
             if (event.key === "Escape") {
                 const modal = document.getElementById('fichaModal');
@@ -698,19 +699,16 @@
         }
 
         function poblarFiltros() {
-            // Zonas alumnos
             const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['zona'])).filter(Boolean))].sort();
             const selectZonaAl = document.getElementById('filtroZonaAlumno');
             const zonaActualAl = selectZonaAl.value;
             selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>Zona ${z}</option>`).join('');
 
-            // Centros alumnos
             const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['centro'])).filter(Boolean))].sort();
             const selectCentroAl = document.getElementById('filtroCentroAlumno');
             const centroActualAl = selectCentroAl.value;
             selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + centrosAlumnos.map(c => `<option value="${c}" ${c === centroActualAl ? 'selected' : ''}>${c}</option>`).join('');
 
-            // Zonas personal
             const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampo(p, ['zona'])).filter(Boolean))].sort();
             const selectZonaPr = document.getElementById('filtroZonaPersonal');
             const zonaActualPr = selectZonaPr.value;
@@ -721,7 +719,6 @@
             document.getElementById('statTotalAlumnos').textContent = dbAlumnos.length;
             document.getElementById('statTotalPersonal').textContent = dbPersonal.length;
 
-            // Conteo de alumnos con condición / discapacidad reportada
             const conCondicion = dbAlumnos.filter(al => {
                 const cond = obtenerValorCampo(al, ['condicion', 'diagnostico']);
                 return cond && cond.toLowerCase() !== 's/n' && cond.toLowerCase() !== 'ninguna' && cond.toLowerCase() !== 'regular';
@@ -729,9 +726,24 @@
             document.getElementById('statCondiciones').textContent = conCondicion;
         }
 
+        // FUNCIÓN MEJORADA DE FORMATEO DE FECHAS (DETECTA SERIES NUMÉRICAS Y TEXTOS)
         function formatearFecha(valor) {
             if (!valor) return '';
             const strVal = valor.toString().trim();
+            if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0') return '';
+
+            // Si viene en formato serial de Excel (ej: 45288)
+            if (!isNaN(strVal) && Number(strVal) > 30000 && Number(strVal) < 60000) {
+                const fechaExcel = new Date((Number(strVal) - (25567 + 2)) * 86400 * 1000);
+                if (!isNaN(fechaExcel.getTime())) {
+                    const d = String(fechaExcel.getDate()).padStart(2, '0');
+                    const m = String(fechaExcel.getMonth() + 1).padStart(2, '0');
+                    const y = fechaExcel.getFullYear();
+                    return `${d}/${m}/${y}`;
+                }
+            }
+
+            // Intento estándar de conversión de fecha
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
                 const d = String(fechaObj.getDate()).padStart(2, '0');
@@ -756,7 +768,7 @@
                 });
                 if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta] !== '') {
                     const valorStr = obj[llaveExacta].toString().trim();
-                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento')) {
+                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento') || limpiaN.includes('promocion') || limpiaN.includes('ingreso')) {
                         return formatearFecha(valorStr);
                     }
                     return valorStr;
@@ -772,7 +784,7 @@
                 });
                 if (llaveEncontrada && obj[llaveEncontrada] !== undefined && obj[llaveEncontrada] !== null && obj[llaveEncontrada] !== '') {
                     const valorStr = obj[llaveEncontrada].toString().trim();
-                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento')) {
+                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento') || limpiaN.includes('promocion') || limpiaN.includes('ingreso')) {
                         return formatearFecha(valorStr);
                     }
                     return valorStr;
@@ -904,8 +916,8 @@
                 const numPlaza = obtenerValorCampo(p, ['num. plaza']);
                 const codigo = obtenerValorCampo(p, ['código', 'codigo']);
                 
-                const fechaIngreso = formatearFecha(obtenerValorCampo(p, ['fecha de ingreso']));
-                const fechaPromocion = formatearFecha(obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']));
+                const fechaIngreso = obtenerValorCampo(p, ['fecha de ingreso']);
+                const fechaPromocion = obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']);
 
                 const formAcademica = obtenerValorCampo(p, ['formación académica', 'formacion academica']);
                 const situacion = obtenerValorCampo(p, ['situación', 'situacion']);
@@ -1084,7 +1096,6 @@
             document.getElementById('fichaModal').style.display = 'flex';
         }
 
-        // NUEVA FUNCIÓN: IMPRESIÓN MASIVA DE CREDENCIALES EN LOTE
         function imprimirCredencialesLote() {
             const zonaFiltro = document.getElementById('filtroZonaAlumno').value;
             const centroFiltro = document.getElementById('filtroCentroAlumno').value;
@@ -1102,7 +1113,6 @@
                 return;
             }
 
-            // Tomamos máximo los primeros 10 para una impresión limpia en lote o todos si se desea
             let credencialesHtml = '<div class="batch-grid-print">';
             lista.slice(0, 10).forEach(al => {
                 credencialesHtml += `
@@ -1162,7 +1172,7 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
