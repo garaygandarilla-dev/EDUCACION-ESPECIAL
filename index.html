@@ -857,7 +857,11 @@
         }
 
         function descargarFichaOficial() {
-            if (!registroSeleccionadoActual) return;
+            if (!registroSeleccionadoActual) {
+                alert("No hay ningún registro seleccionado.");
+                return;
+            }
+            
             const { tipo, data, plazas } = registroSeleccionadoActual;
             
             let contenidoTxt = `==================================================\n`;
@@ -887,8 +891,9 @@
                 contenidoTxt += `CORREO: ${obtenerValorCampo(data, ['e-mail', 'correo', 'email'])}\n`;
                 contenidoTxt += `DOMICILIO: ${obtenerValorCampo(data, ['domicilio particular', 'domicilio'])}\n\n`;
                 
-                contenidoTxt += `--- PLAZAS Y CLAVES PRESUPUESTALES (${plazas.length}) ---\n`;
-                plazas.forEach((plaza, idx) => {
+                const listaPlazas = plazas || [data];
+                contenidoTxt += `--- PLAZAS Y CLAVES PRESUPUESTALES (${listaPlazas.length}) ---\n`;
+                listaPlazas.forEach((plaza, idx) => {
                     contenidoTxt += `\n[ PLAZA NÚMERO ${idx + 1} ]\n`;
                     contenidoTxt += `  - Núm. Plaza: ${obtenerValorCampo(plaza, ['num. plaza'])}\n`;
                     contenidoTxt += `  - Código: ${obtenerValorCampo(plaza, ['código', 'codigo'])}\n`;
@@ -901,15 +906,20 @@
                 });
             }
 
-            const blob = new Blob([contenidoTxt], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Ficha_Identificacion_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            try {
+                const blob = new Blob([contenidoTxt], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Ficha_Identificacion_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Error al generar el archivo:", error);
+                alert("No se pudo generar el archivo de descarga.");
+            }
         }
 
         function exportarExcel() {
@@ -932,7 +942,7 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
