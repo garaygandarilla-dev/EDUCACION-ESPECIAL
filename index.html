@@ -155,7 +155,7 @@
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 
-        /* Ventana Modal de Ficha de Identificación / Técnica */
+        /* Ventana Modal de Ficha Técnica / Identificación */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -378,14 +378,14 @@
     <div id="fichaModal" class="modal-overlay" onclick="cerrarFichaModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3 id="modalTitulo">Ficha Técnica de Personal</h3>
+                <h3 id="modalTitulo">Ficha Técnica</h3>
                 <button class="btn-logout" onclick="cerrarFichaModalDirecto()">✕ Cerrar</button>
             </div>
             <div class="modal-body" id="modalContenidoFicha">
                 <!-- Se inyecta dinámicamente -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="descargarFichaCompleta()">📥 Descargar Ficha Técnica Oficial (TXT/Impresión)</button>
+                <button class="btn btn-primary" onclick="descargarFichaOficial()">📥 Descargar Ficha / Credencial (TXT)</button>
                 <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
             </div>
         </div>
@@ -730,7 +730,7 @@
             const al = JSON.parse(alJson);
             registroSeleccionadoActual = { tipo: 'Alumno', data: al };
 
-            document.getElementById('modalTitulo').textContent = "Ficha de Identificación de Alumno";
+            document.getElementById('modalTitulo').textContent = "Ficha de Identificación del Alumno";
             
             const html = `
                 <div class="ficha-grid">
@@ -780,7 +780,6 @@
             const p = JSON.parse(pJson);
             const curpSeleccionada = obtenerValorCampo(p, ['clave curp', 'curp']).toUpperCase();
             
-            // Buscar todas las plazas/registros que correspondan a este mismo docente (por CURP)
             const plazasDocente = dbPersonal.filter(item => {
                 const c = obtenerValorCampo(item, ['clave curp', 'curp']).toUpperCase();
                 return c === curpSeleccionada && curpSeleccionada !== '';
@@ -828,7 +827,7 @@
                         <div class="ficha-val">Ingreso: ${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
                     </div>
                     <div class="ficha-item full">
-                        <div class="ficha-label">Detalle de Plazas y Claves Presupuestales Registradas (${registroSeleccionadoActual.plazas.length})</div>
+                        <div class="ficha-label">Desglose de Plazas y Claves Presupuestales (${registroSeleccionadoActual.plazas.length})</div>
                         ${plazasHtml}
                     </div>
                     <div class="ficha-item">
@@ -857,15 +856,28 @@
             document.getElementById('fichaModal').style.display = 'none';
         }
 
-        function descargarFichaCompleta() {
+        function descargarFichaOficial() {
             if (!registroSeleccionadoActual) return;
             const { tipo, data, plazas } = registroSeleccionadoActual;
             
             let contenidoTxt = `==================================================\n`;
-            contenidoTxt += `   FICHA TÉCNICA OFICIAL - EDUCACIÓN ESPECIAL     \n`;
+            contenidoTxt += `   FICHA DE IDENTIFICACIÓN / CREDENCIAL USAER     \n`;
             contenidoTxt += `==================================================\n\n`;
 
-            if (tipo === 'Personal') {
+            if (tipo === 'Alumno') {
+                contenidoTxt += `--- DATOS DEL ALUMNO ---\n`;
+                contenidoTxt += `NOMBRE: ${obtenerValorCampo(data, ['nombre del alumno', 'nombre', 'alumno'])}\n`;
+                contenidoTxt += `CURP: ${obtenerValorCampo(data, ['curp'])}\n`;
+                contenidoTxt += `SEXO: ${obtenerValorCampo(data, ['sexo'])}\n`;
+                contenidoTxt += `NIVEL EDUCATIVO: ${obtenerValorCampo(data, ['nivel'])}\n`;
+                contenidoTxt += `GRADO Y TALLER: ${obtenerValorCampo(data, ['grado/taller', 'grado', 'taller'])}\n`;
+                contenidoTxt += `CONDICIÓN / DIAGNÓSTICO: ${obtenerValorCampo(data, ['condicion', 'diagnostico'])}\n\n`;
+                contenidoTxt += `--- ADSCRIPCIÓN ---\n`;
+                contenidoTxt += `ZONA: ${obtenerValorCampo(data, ['zona'])}\n`;
+                contenidoTxt += `CENTRO: ${obtenerValorCampo(data, ['centro'])} (${obtenerValorCampo(data, ['clave'])})\n`;
+                contenidoTxt += `ESCUELA DE PROCEDENCIA: ${obtenerValorCampo(data, ['nombre de la escuela', 'escuela'])}\n`;
+                contenidoTxt += `MAESTRO(A) DE APOYO: ${obtenerValorCampo(data, ['maestro(a) de apoyo', 'apoyo'])}\n`;
+            } else {
                 const nombreCompleto = `${obtenerValorCampo(data, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(data, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(data, ['apellido materno', 'materno'])}`;
                 contenidoTxt += `NOMBRE: ${nombreCompleto}\n`;
                 contenidoTxt += `CURP: ${obtenerValorCampo(data, ['clave curp', 'curp'])}\n`;
@@ -887,19 +899,13 @@
                     contenidoTxt += `  - Función: ${obtenerValorCampo(plaza, ['funcion', 'función'])}\n`;
                     contenidoTxt += `  - Situación: ${obtenerValorCampo(plaza, ['situación', 'situacion'])}\n`;
                 });
-            } else {
-                for (let key in data) {
-                    if (data[key] !== undefined && data[key] !== '') {
-                        contenidoTxt += `${key.toUpperCase()}: ${data[key]}\n`;
-                    }
-                }
             }
 
             const blob = new Blob([contenidoTxt], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Ficha_Tecnica_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
+            a.download = `Ficha_Identificacion_${tipo}_${new Date().toISOString().slice(0,10)}.txt`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -926,7 +932,7 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
