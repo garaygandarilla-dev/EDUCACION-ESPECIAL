@@ -253,12 +253,28 @@
             margin: -20px -20px 15px -20px;
         }
 
+        /* CONFIGURACIÓN EXCLUSIVA PARA IMPRESIÓN Y PDF */
         @media print {
             body * { visibility: hidden; }
-            #modalContenidoFicha, #modalContenidoFicha * { visibility: visible; }
-            #fichaModal { background: white; position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex !important; }
-            .modal-card { box-shadow: none; max-width: 100%; height: 100%; }
-            .modal-header, .modal-footer { display: none; }
+            #fichaModal, #fichaModal * { visibility: visible; }
+            #fichaModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-card {
+                box-shadow: none !important;
+                max-width: 100% !important;
+                height: auto !important;
+                border: none !important;
+            }
+            .modal-header, .modal-footer { display: none !important; }
         }
     </style>
 </head>
@@ -423,7 +439,7 @@
                 <!-- Se inyecta dinámicamente -->
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="imprimirCredencialOFicha()">🖨️ Imprimir / Guardar como PDF</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
                 <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
             </div>
         </div>
@@ -890,10 +906,6 @@
 
         function cerrarFichaModalDirecto() {
             document.getElementById('fichaModal').style.display = 'none';
-        }
-
-        function imprimirCredencialOFicha() {
-            window.print();
         }
 
         function exportarExcel() {
