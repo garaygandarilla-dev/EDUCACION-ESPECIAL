@@ -583,7 +583,6 @@
         const CLAVE_CORRECTA = "LAGUNA2026";
 
         let usuarioSesion = JSON.parse(localStorage.getItem('usaer_sesion') || 'null');
-        // Siempre iniciamos arreglos limpios para evitar arrastrar caché vieja de pruebas anteriores
         let dbAlumnos = [];
         let dbPersonal = [];
 
@@ -592,7 +591,7 @@
         let registroSeleccionadoActual = null;
 
         window.onload = function() {
-            // Limpiamos cachés de datos viejos al iniciar
+            // Eliminamos cualquier rastro previo de datos en caché
             localStorage.removeItem('usaer_alumnos');
             localStorage.removeItem('usaer_personal');
 
@@ -674,22 +673,29 @@
 
         async function sincronizarTodo() {
             const badge = document.getElementById('syncBadge');
-            badge.textContent = "Sincronizando con Google Sheets...";
+            badge.textContent = "Descargando datos reales de Google Sheets...";
             badge.className = "sync-status sync-loading";
 
-            // Agregamos parámetro anti-caché (?t=...) para obligar al navegador a traer lo más reciente de Google Sheets
-            const ts = new Date().getTime();
+            // 1. Vaciamos las listas en memoria y en pantalla antes de pedir datos nuevos
+            dbAlumnos = [];
+            dbPersonal = [];
+            document.getElementById('filtroZonaAlumno').innerHTML = '<option value="">Todas las Zonas</option>';
+            document.getElementById('filtroCentroAlumno').innerHTML = '<option value="">Todos los Centros</option>';
+            document.getElementById('filtroZonaPersonal').innerHTML = '<option value="">Todas las Zonas</option>';
+            document.getElementById('filtroCentroPersonal').innerHTML = '<option value="">Todos los Centros</option>';
+
+            const ts = Date.now() + "_" + Math.random().toString(36).substring(7);
 
             if (URL_ALUMNOS) {
                 try {
-                    const res = await fetch(`${URL_ALUMNOS}?t=${ts}`);
+                    const res = await fetch(`${URL_ALUMNOS}?nocache=${ts}`, { cache: 'no-store' });
                     const data = await res.json();
                     if (Array.isArray(data)) {
-                        // Filtramos filas vacías o encabezados repetidos
                         dbAlumnos = data.filter(row => {
                             const nom = obtenerValorCampoEstricto(row, ['nombre del alumno', 'nombre', 'alumno']);
                             const curp = obtenerValorCampoEstricto(row, ['curp']);
-                            return (nom && nom.toLowerCase() !== 'nombre del alumno') || (curp && curp.length >= 10);
+                            const esEncabezado = nom.toLowerCase() === 'nombre del alumno';
+                            return !esEncabezado && (nom.length > 2 || curp.length >= 10);
                         });
                     }
                 } catch (e) { console.warn("Error cargando Alumnos:", e); }
@@ -697,14 +703,14 @@
 
             if (URL_PLANTILLA) {
                 try {
-                    const res = await fetch(`${URL_PLANTILLA}?t=${ts}`);
+                    const res = await fetch(`${URL_PLANTILLA}?nocache=${ts}`, { cache: 'no-store' });
                     const data = await res.json();
                     if (Array.isArray(data)) {
-                        // Filtramos filas vacías o encabezados repetidos
                         dbPersonal = data.filter(row => {
                             const nom = obtenerValorCampoEstricto(row, ['nombre(s)', 'nombres', 'nombre']);
                             const curp = obtenerValorCampoEstricto(row, ['clave curp', 'curp']);
-                            return (nom && nom.toLowerCase() !== 'nombre(s)') || (curp && curp.length >= 10);
+                            const esEncabezado = nom.toLowerCase() === 'nombre(s)';
+                            return !esEncabezado && (nom.length > 2 || curp.length >= 10);
                         });
                     }
                 } catch (e) { console.warn("Error cargando Plantilla:", e); }
@@ -715,38 +721,57 @@
             renderPersonal();
             actualizarEstadisticas();
 
-            badge.textContent = "Sheets Conectados (Actualizado)";
+            badge.textContent = "Sheets Conectados (En vivo)";
             badge.className = "sync-status sync-online";
 
             const ahora = new Date();
             document.getElementById('statUltimaSinc').textContent = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
-        // POBLA LOS FILTROS EXCLUSIVAMENTE CON LOS VALORES REALES DE LAS COLUMNAS ZONA Y CENTRO
         function poblarFiltros() {
-            // Alumnos - Zona
-            const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampoEstricto(al, ['zona'])).filter(z => z && z.length < 25))].sort();
+            // Alumnos - Zona (solo lee exactamente lo que hay en la columna Zona)
+            const zonasAlumnos = [...new Set(
+                dbAlumnos
+                    .map(al => obtenerValorCampoEstricto(al, ['zona']).trim())
+                    .filter(z => z !== '' && z.toLowerCase() !== 'zona')
+            )].sort();
+            
             const selectZonaAl = document.getElementById('filtroZonaAlumno');
-            const zonaActualAl = selectZonaAl.value;
-            selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>${z}</option>`).join('');
+            selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + 
+                zonasAlumnos.map(z => `<option value="${z}">${z}</option>`).join('');
 
-            // Alumnos - Centro
-            const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampoEstricto(al, ['centro'])).filter(Boolean))].sort();
+            // Alumnos - Centro (solo lee exactamente lo que hay en la columna Centro)
+            const centrosAlumnos = [...new Set(
+                dbAlumnos
+                    .map(al => obtenerValorCampoEstricto(al, ['centro']).trim())
+                    .filter(c => c !== '' && c.toLowerCase() !== 'centro')
+            )].sort();
+
             const selectCentroAl = document.getElementById('filtroCentroAlumno');
-            const centroActualAl = selectCentroAl.value;
-            selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + centrosAlumnos.map(c => `<option value="${c}" ${c === centroActualAl ? 'selected' : ''}>${c}</option>`).join('');
+            selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + 
+                centrosAlumnos.map(c => `<option value="${c}">${c}</option>`).join('');
 
             // Personal - Zona
-            const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampoEstricto(p, ['zona'])).filter(z => z && z.length < 25))].sort();
+            const zonasPersonal = [...new Set(
+                dbPersonal
+                    .map(p => obtenerValorCampoEstricto(p, ['zona']).trim())
+                    .filter(z => z !== '' && z.toLowerCase() !== 'zona')
+            )].sort();
+
             const selectZonaPr = document.getElementById('filtroZonaPersonal');
-            const zonaActualPr = selectZonaPr.value;
-            selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + zonasPersonal.map(z => `<option value="${z}" ${z === zonaActualPr ? 'selected' : ''}>${z}</option>`).join('');
+            selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + 
+                zonasPersonal.map(z => `<option value="${z}">${z}</option>`).join('');
 
             // Personal - Centro
-            const centrosPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro'])).filter(Boolean))].sort();
+            const centrosPersonal = [...new Set(
+                dbPersonal
+                    .map(p => obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']).trim())
+                    .filter(c => c !== '' && c.toLowerCase() !== 'nombre del centro')
+            )].sort();
+
             const selectCentroPr = document.getElementById('filtroCentroPersonal');
-            const centroActualPr = selectCentroPr.value;
-            selectCentroPr.innerHTML = '<option value="">Todos los Centros</option>' + centrosPersonal.map(c => `<option value="${c}" ${c === centroActualPr ? 'selected' : ''}>${c}</option>`).join('');
+            selectCentroPr.innerHTML = '<option value="">Todos los Centros</option>' + 
+                centrosPersonal.map(c => `<option value="${c}">${c}</option>`).join('');
         }
 
         function actualizarEstadisticas() {
@@ -760,13 +785,12 @@
             document.getElementById('statCondiciones').textContent = conCondicion;
         }
 
-        // FORMATEO DE FECHAS INTEGRAL (SOPORTA ISO, DD/MM/YYYY, DD-MM-YYYY, MM/DD/YYYY Y SERIALES DE EXCEL)
         function formatearFecha(valor) {
             if (valor === undefined || valor === null) return '';
             let strVal = valor.toString().trim();
             if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0' || strVal === '-') return '';
 
-            // 1. Si es número serial de Google Sheets / Excel (ej: 44562 o 44562.5)
+            // 1. Número serial de Google Sheets / Excel
             if (!isNaN(strVal) && Number(strVal) > 15000 && Number(strVal) < 70000) {
                 const serial = Math.floor(Number(strVal));
                 const utcDays = serial - 25569;
@@ -779,7 +803,7 @@
                 }
             }
 
-            // 2. Si viene con formato ISO con hora (ej: "2018-09-01T05:00:00.000Z" o "2018-09-01")
+            // 2. Formato ISO (ej: "2018-09-01T05:00:00.000Z" o "2018-09-01")
             const isoMatch = strVal.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
             if (isoMatch) {
                 const y = isoMatch[1];
@@ -788,7 +812,7 @@
                 return `${d}/${m}/${y}`;
             }
 
-            // 3. Si ya viene en formato DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+            // 3. Formato DD/MM/YYYY o DD-MM-YYYY
             const latamMatch = strVal.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
             if (latamMatch) {
                 let p1 = parseInt(latamMatch[1], 10);
@@ -796,14 +820,13 @@
                 let y = latamMatch[3];
                 if (y.length === 2) y = (parseInt(y, 10) > 30 ? '19' : '20') + y;
 
-                // Si el segundo número es mayor a 12, venía en formato MM/DD/YYYY -> invertimos
                 if (p2 > 12 && p1 <= 12) {
                     return `${String(p2).padStart(2, '0')}/${String(p1).padStart(2, '0')}/${y}`;
                 }
                 return `${String(p1).padStart(2, '0')}/${String(p2).padStart(2, '0')}/${y}`;
             }
 
-            // 4. Si viene texto largo de fecha en inglés de JavaScript (ej: "Mon Sep 03 2018 00:00:00 GMT-0500")
+            // 4. Texto largo de fecha JS
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
                 const d = String(fechaObj.getDate()).padStart(2, '0');
@@ -817,12 +840,10 @@
             return strVal;
         }
 
-        // BÚSQUEDA ESTRICTA DE ENCABEZADOS PARA EVITAR QUE MEZCLE COLUMNAS
         function obtenerValorCampoEstricto(obj, posiblesNombres) {
             if (!obj) return '';
             const llaves = Object.keys(obj);
             
-            // Primero buscamos coincidencia exacta (ignorando mayúsculas, espacios extras y acentos)
             for (let nombre of posiblesNombres) {
                 const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
                 const llaveExacta = llaves.find(k => {
@@ -858,8 +879,8 @@
             const centroFiltro = document.getElementById('filtroCentroAlumno').value;
             
             let lista = dbAlumnos.filter(al => {
-                const zona = obtenerValorCampoEstricto(al, ['zona']);
-                const centro = obtenerValorCampoEstricto(al, ['centro']);
+                const zona = obtenerValorCampoEstricto(al, ['zona']).trim();
+                const centro = obtenerValorCampoEstricto(al, ['centro']).trim();
                 
                 if (zonaFiltro && zona !== zonaFiltro) return false;
                 if (centroFiltro && centro !== centroFiltro) return false;
@@ -931,8 +952,8 @@
             const centroFiltro = document.getElementById('filtroCentroPersonal').value;
             
             let lista = dbPersonal.filter(p => {
-                const zona = obtenerValorCampoEstricto(p, ['zona']);
-                const centro = obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']);
+                const zona = obtenerValorCampoEstricto(p, ['zona']).trim();
+                const centro = obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']).trim();
                 if (zonaFiltro && zona !== zonaFiltro) return false;
                 if (centroFiltro && centro !== centroFiltro) return false;
 
@@ -1151,8 +1172,8 @@
             const centroFiltro = document.getElementById('filtroCentroAlumno').value;
 
             let lista = dbAlumnos.filter(al => {
-                const zona = obtenerValorCampoEstricto(al, ['zona']);
-                const centro = obtenerValorCampoEstricto(al, ['centro']);
+                const zona = obtenerValorCampoEstricto(al, ['zona']).trim();
+                const centro = obtenerValorCampoEstricto(al, ['centro']).trim();
                 if (zonaFiltro && zona !== zonaFiltro) return false;
                 if (centroFiltro && centro !== centroFiltro) return false;
                 return true;
