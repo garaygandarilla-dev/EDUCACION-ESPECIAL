@@ -155,7 +155,7 @@
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 
-        /* Ventana Modal de Ficha Técnica / Credencial */
+        /* Ventana Modal de Ficha Técnica / Identificación */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -253,44 +253,54 @@
             margin: -20px -20px 15px -20px;
         }
 
-        /* CONFIGURACIÓN ESTRICTA PARA IMPRESIÓN (EVITA PÁGINAS EN BLANCO) */
+        /* REGLAS ABSOLUTAS DE IMPRESIÓN (FUERZA 1 SOLA PÁGINA) */
         @media print {
-            body * {
-                visibility: hidden;
+            * {
+                visibility: hidden !important;
             }
-            #modalContenidoFicha, #modalContenidoFicha * {
-                visibility: visible;
+            #fichaModal, #fichaModal *, .credencial-preview, .credencial-preview * {
+                visibility: visible !important;
             }
-            #modalContenidoFicha {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 10px;
-                background: white;
+            body, html {
+                background: white !important;
+                height: 100% !important;
+                overflow: hidden !important;
             }
             #fichaModal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
                 background: white !important;
-                display: block !important;
-                overflow: visible !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                z-index: 99999 !important;
             }
             .modal-card {
                 box-shadow: none !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                height: auto !important;
                 border: none !important;
-                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                background: white !important;
+            }
+            .modal-body {
+                overflow: visible !important;
+                background: white !important;
                 padding: 0 !important;
             }
             .modal-header, .modal-footer {
                 display: none !important;
+            }
+            .credencial-preview {
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border: 2px solid #1a365d !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
             }
         }
     </style>
@@ -851,6 +861,8 @@
             document.getElementById('modalTitulo').textContent = "Ficha Técnica y Plazas del Personal";
             
             const nombreCompleto = `${obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(p, ['apellido materno', 'materno'])}`;
+            
+            const fechaPromocionDocente = obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']);
 
             let plazasHtml = '';
             (registroSeleccionadoActual.plazas).forEach((plaza, index) => {
@@ -895,6 +907,11 @@
                         <div class="ficha-label">Fecha de Ingreso</div>
                         <div class="ficha-val">${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
                     </div>
+                    ${fechaPromocionDocente ? `
+                    <div class="ficha-item">
+                        <div class="ficha-label">Fecha de Promoción</div>
+                        <div class="ficha-val">${fechaPromocionDocente}</div>
+                    </div>` : ''}
                     <div class="ficha-item full">
                         <div class="ficha-label">Desglose de Claves Presupuestales y Plazas (${registroSeleccionadoActual.plazas.length})</div>
                         ${plazasHtml}
