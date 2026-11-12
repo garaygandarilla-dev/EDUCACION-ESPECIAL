@@ -7,11 +7,31 @@
     <!-- Librería para exportar a Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
-        body { background-color: #f4f6f9; color: #333; }
+        :root {
+            --bg-color: #f4f6f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --header-bg: #1a365d;
+            --border-color: #b0c4de;
+            --input-bg: #f7fafc;
+            --input-text: #2d3748;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a202c;
+            --text-color: #e2e8f0;
+            --card-bg: #2d3748;
+            --header-bg: #0f172a;
+            --border-color: #4a5568;
+            --input-bg: #1a202c;
+            --input-text: #f7fafc;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text-color); }
         
         .header-bar {
-            background-color: #1a365d;
+            background-color: var(--header-bg);
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -24,15 +44,29 @@
         }
         .header-title { font-size: 1.2rem; font-weight: bold; }
         
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+
         .user-badge {
             background-color: #2b6cb0;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 600;
-            margin-right: 12px;
+            color: white;
         }
         
+        .btn-theme {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .btn-theme:hover { background: #718096; }
+
         .btn-logout {
             background-color: #e53e3e;
             color: white;
@@ -69,7 +103,7 @@
         .login-card {
             max-width: 440px;
             margin: 60px auto;
-            background: white;
+            background: var(--card-bg);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
@@ -101,15 +135,23 @@
         .toggle-password:hover { color: #2d3748; }
 
         .container { max-width: 1950px; margin: 20px auto; padding: 0 15px; }
-        .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card { background: var(--card-bg); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .form-group { display: flex; flex-direction: column; text-align: left; }
         .form-group label { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #4a5568; }
-        .form-group input { padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 0.9rem; background-color: #f7fafc; color: #2d3748; font-weight: bold; }
+        .form-group input, .form-group select { padding: 9px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; background-color: var(--input-bg); color: var(--input-text); font-weight: bold; }
         
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
         .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-primary { background-color: #3182ce; color: white; }
         .btn-success { background-color: #38a169; color: white; }
         .btn-sync { background-color: #805ad5; color: white; }
+        .btn-batch { background-color: #d69e2e; color: white; }
         
         .sync-status {
             display: inline-block;
@@ -125,12 +167,12 @@
         /* Panel de Indicadores (Dashboard) */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
         .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
             border-left: 4px solid #3182ce;
             padding: 15px;
             border-radius: 8px;
@@ -138,15 +180,17 @@
         }
         .stat-card.green { border-left-color: #38a169; }
         .stat-card.purple { border-left-color: #805ad5; }
-        .stat-title { font-size: 0.8rem; color: #718096; font-weight: bold; text-transform: uppercase; }
-        .stat-value { font-size: 1.4rem; color: #2d3748; font-weight: bold; margin-top: 5px; }
+        .stat-card.orange { border-left-color: #d69e2e; }
+        .stat-title { font-size: 0.75rem; color: #718096; font-weight: bold; text-transform: uppercase; }
+        .stat-value { font-size: 1.3rem; color: var(--text-color); font-weight: bold; margin-top: 5px; }
 
         /* Estilo tipo Google Sheets (Cuadriculado y centrado) */
-        table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: #ffffff; }
-        th, td { border: 1px solid #b0c4de; padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; cursor: pointer; }
+        table { width: max-content; min-width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.78rem; table-layout: auto; background-color: var(--card-bg); }
+        th, td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: center; vertical-align: middle; white-space: normal; word-break: break-word; cursor: pointer; color: var(--text-color); }
         th { background-color: #e2e8f0; color: #1a202c; font-weight: bold; border-bottom: 2px solid #a0aec0; cursor: default; }
-        tr:nth-child(even) { background-color: #fdfdfd; }
-        tr:hover { background-color: #ebf8ff !important; }
+        [data-theme="dark"] th { background-color: #4a5568; color: #f7fafc; }
+        tr:nth-child(even) { background-color: rgba(0,0,0,0.01); }
+        tr:hover { background-color: rgba(49, 130, 206, 0.1) !important; }
 
         .td-codigo { white-space: nowrap; text-align: center; }
         .td-texto { min-width: 180px; text-align: center; }
@@ -155,7 +199,7 @@
         .badge-active { background: #c6f6d5; color: #22543d; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge-inactive { background: #fed7d7; color: #742a2a; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 
-        /* Ventana Modal de Ficha Técnica / Identificación */
+        /* Ventana Modal de Ficha Técnica / Credencial */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -167,7 +211,7 @@
             padding: 20px;
         }
         .modal-card {
-            background: white;
+            background: var(--card-bg);
             width: 100%;
             max-width: 850px;
             border-radius: 10px;
@@ -178,7 +222,7 @@
             max-height: 90vh;
         }
         .modal-header {
-            background: #1a365d;
+            background: var(--header-bg);
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -189,7 +233,7 @@
             padding: 25px;
             overflow-y: auto;
             font-size: 0.9rem;
-            background: #fff;
+            background: var(--card-bg);
         }
         .ficha-grid {
             display: grid;
@@ -197,18 +241,18 @@
             gap: 12px;
         }
         .ficha-item {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
             padding: 10px 12px;
             border-radius: 6px;
         }
         .ficha-item.full { grid-column: span 2; }
         .ficha-label { font-size: 0.75rem; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
-        .ficha-val { font-size: 0.95rem; color: #2d3748; font-weight: 600; }
+        .ficha-val { font-size: 0.95rem; color: var(--text-color); font-weight: 600; }
         
         .plaza-box {
-            background: #ebf8ff;
-            border: 1px solid #90cdf4;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
             padding: 12px;
             border-radius: 6px;
             margin-top: 10px;
@@ -219,19 +263,19 @@
             gap: 8px;
             margin-top: 8px;
             font-size: 0.85rem;
-            background: #fff;
+            background: var(--card-bg);
             padding: 8px;
             border-radius: 4px;
-            border: 1px solid #bee3f8;
+            border: 1px solid var(--border-color);
         }
 
         .modal-footer {
             padding: 15px 20px;
-            background: #f1f5f9;
+            background: var(--bg-color);
             display: flex;
             justify-content: flex-end;
             gap: 10px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--border-color);
         }
 
         /* DISEÑO DE CREDENCIAL IMPRIMIBLE PARA ALUMNOS */
@@ -240,6 +284,7 @@
             border-radius: 12px;
             padding: 20px;
             background: #fff;
+            color: #333;
             max-width: 450px;
             margin: 0 auto;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -253,12 +298,20 @@
             margin: -20px -20px 15px -20px;
         }
 
+        /* VISTA DE IMPRESIÓN MASIVA (LOTE) */
+        .batch-grid-print {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 10px;
+        }
+
         /* REGLAS ABSOLUTAS DE IMPRESIÓN (FUERZA 1 SOLA PÁGINA) */
         @media print {
             * {
                 visibility: hidden !important;
             }
-            #fichaModal, #fichaModal *, .credencial-preview, .credencial-preview * {
+            #fichaModal, #fichaModal *, .credencial-preview, .credencial-preview *, .batch-grid-print, .batch-grid-print * {
                 visibility: visible !important;
             }
             body, html {
@@ -302,15 +355,21 @@
                 page-break-after: avoid !important;
                 page-break-before: avoid !important;
             }
+            .batch-grid-print {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px !important;
+            }
         }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
     <div class="header-bar">
         <div class="header-title">EDUCACIÓN ESPECIAL REGIÓN LAGUNA</div>
-        <div id="sessionHeaderControls" style="display: none; align-items: center;">
+        <div class="header-controls" id="sessionHeaderControls" style="display: none;">
             <span class="user-badge" id="userRoleBadge">Iniciando...</span>
+            <button class="btn-theme" onclick="toggleTema()" title="Cambiar Modo Claro/Oscuro">🌙 Modo Oscuro</button>
             <button class="btn-logout" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
         </div>
     </div>
@@ -343,7 +402,7 @@
         </div>
 
         <div class="container">
-            <!-- PANEL DE INDICADORES (DASHBOARD) -->
+            <!-- PANEL DE INDICADORES (DASHBOARD) CON ESTADÍSTICAS Y ALERTAS -->
             <div class="dashboard-grid">
                 <div class="stat-card">
                     <div class="stat-title">Total Alumnos Atendidos</div>
@@ -355,25 +414,50 @@
                 </div>
                 <div class="stat-card purple">
                     <div class="stat-title">Última Sincronización</div>
-                    <div class="stat-value" id="statUltimaSinc" style="font-size: 1rem; margin-top: 8px;">Pendiente</div>
+                    <div class="stat-value" id="statUltimaSinc" style="font-size: 0.9rem; margin-top: 8px;">Pendiente</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-title">Alumnos con Discapacidad / Condición</div>
+                    <div class="stat-value" id="statCondiciones">0</div>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <button class="btn btn-sync" onclick="sincronizarTodo()">🔄 Sincronizar Todo con Google Sheets</button>
                     <span id="syncBadge" class="sync-status sync-online">Sheets Conectados</span>
                 </div>
-                <button class="btn btn-success" onclick="exportarExcel()">📊 Exportar Concentrado SEED</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-batch" onclick="imprimirCredencialesLote()">🖨️ Imprimir Credenciales en Lote</button>
+                    <button class="btn btn-success" onclick="exportarExcel()">📊 Exportar Concentrado SEED</button>
+                </div>
             </div>
 
-            <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS) -->
+            <!-- 1. SECCIÓN DE ALUMNOS (REGISTROS CON FILTROS AVANZADOS) -->
             <div id="alumnosSection" class="tab-content">
                 <div class="card">
                     <h3 style="margin-bottom: 15px;">Concentrado de Alumnos Atendidos <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Credencial / Ficha Escolar)</span></h3>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <input type="text" id="searchAlumno" oninput="debounceBusquedaAlumnos()" placeholder="🔍 Buscar por zona, centro, alumno, CURP, escuela o condición...">
+                    
+                    <!-- FILTROS AVANZADOS POR ZONA Y CENTRO -->
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Filtrar por Zona Escolar:</label>
+                            <select id="filtroZonaAlumno" onchange="renderAlumnos()">
+                                <option value="">Todas las Zonas</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filtrar por Centro de Trabajo:</label>
+                            <select id="filtroCentroAlumno" onchange="renderAlumnos()">
+                                <option value="">Todos los Centros</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Búsqueda General:</label>
+                            <input type="text" id="searchAlumno" oninput="debounceBusquedaAlumnos()" placeholder="🔍 Buscar por nombre, CURP, escuela o condición...">
+                        </div>
                     </div>
+
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
@@ -409,9 +493,20 @@
             <div id="personalSection" class="tab-content" style="display: none;">
                 <div class="card">
                     <h3 style="margin-bottom: 15px; color: #2b6cb0;">Plantilla Adscrita al Centro de Trabajo <span style="font-size: 0.8rem; color: #718096; font-weight: normal;">(Haz clic en cualquier fila para ver la Ficha Técnica Completa con todas sus Plazas)</span></h3>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
+                    
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Filtrar por Zona Escolar:</label>
+                            <select id="filtroZonaPersonal" onchange="renderPersonal()">
+                                <option value="">Todas las Zonas</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 3;">
+                            <label>Búsqueda General:</label>
+                            <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
+                        </div>
                     </div>
+
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
@@ -465,7 +560,7 @@
             <div class="modal-body" id="modalContenidoFicha">
                 <!-- Se inyecta dinámicamente -->
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" id="modalFooterButtons">
                 <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
                 <button class="btn" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
             </div>
@@ -492,9 +587,29 @@
             } else {
                 document.getElementById('loginSection').style.display = 'block';
             }
+            
+            // Cargar tema guardado
+            const temaGuardado = localStorage.getItem('usaer_theme') || 'light';
+            document.body.setAttribute('data-theme', temaGuardado);
+            actualizarTextoBotonTema(temaGuardado);
         };
 
-        // Escucha global de la tecla ESC para cerrar la ventana modal si está abierta
+        function toggleTema() {
+            const actual = document.body.getAttribute('data-theme');
+            const nuevo = actual === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', nuevo);
+            localStorage.setItem('usaer_theme', nuevo);
+            actualizarTextoBotonTema(nuevo);
+        }
+
+        function actualizarTextoBotonTema(tema) {
+            const btn = document.querySelector('.btn-theme');
+            if (btn) {
+                btn.textContent = tema === 'light' ? '🌙 Modo Oscuro' : '☀️ Modo Claro';
+            }
+        }
+
+        // Cierre con tecla ESC
         document.addEventListener('keydown', function(event) {
             if (event.key === "Escape") {
                 const modal = document.getElementById('fichaModal');
@@ -506,16 +621,11 @@
 
         function toggleMostrarPassword() {
             const passInput = document.getElementById('loginPass');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-            } else {
-                passInput.type = 'password';
-            }
+            passInput.type = passInput.type === 'password' ? 'text' : 'password';
         }
 
         function iniciarSesion() {
             const passVal = document.getElementById('loginPass').value.trim();
-
             if (passVal === CLAVE_CORRECTA) {
                 usuarioSesion = { nombre: 'Educación Especial', rol: 'Región Laguna' };
                 localStorage.setItem('usaer_sesion', JSON.stringify(usuarioSesion));
@@ -575,6 +685,7 @@
                 } catch (e) { console.warn("Error cargando Plantilla:", e); }
             }
 
+            poblarFiltros();
             renderAlumnos();
             renderPersonal();
             actualizarEstadisticas();
@@ -586,9 +697,36 @@
             document.getElementById('statUltimaSinc').textContent = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
+        function poblarFiltros() {
+            // Zonas alumnos
+            const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['zona'])).filter(Boolean))].sort();
+            const selectZonaAl = document.getElementById('filtroZonaAlumno');
+            const zonaActualAl = selectZonaAl.value;
+            selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>Zona ${z}</option>`).join('');
+
+            // Centros alumnos
+            const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['centro'])).filter(Boolean))].sort();
+            const selectCentroAl = document.getElementById('filtroCentroAlumno');
+            const centroActualAl = selectCentroAl.value;
+            selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + centrosAlumnos.map(c => `<option value="${c}" ${c === centroActualAl ? 'selected' : ''}>${c}</option>`).join('');
+
+            // Zonas personal
+            const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampo(p, ['zona'])).filter(Boolean))].sort();
+            const selectZonaPr = document.getElementById('filtroZonaPersonal');
+            const zonaActualPr = selectZonaPr.value;
+            selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + zonasPersonal.map(z => `<option value="${z}" ${z === zonaActualPr ? 'selected' : ''}>Zona ${z}</option>`).join('');
+        }
+
         function actualizarEstadisticas() {
             document.getElementById('statTotalAlumnos').textContent = dbAlumnos.length;
             document.getElementById('statTotalPersonal').textContent = dbPersonal.length;
+
+            // Conteo de alumnos con condición / discapacidad reportada
+            const conCondicion = dbAlumnos.filter(al => {
+                const cond = obtenerValorCampo(al, ['condicion', 'diagnostico']);
+                return cond && cond.toLowerCase() !== 's/n' && cond.toLowerCase() !== 'ninguna' && cond.toLowerCase() !== 'regular';
+            }).length;
+            document.getElementById('statCondiciones').textContent = conCondicion;
         }
 
         function formatearFecha(valor) {
@@ -643,38 +781,36 @@
             return '';
         }
 
-        function esRegistroPermitido(reg) {
-            return true;
-        }
-
         function debounceBusquedaAlumnos() {
             clearTimeout(timerAlumnos);
-            timerAlumnos = setTimeout(() => {
-                renderAlumnos();
-            }, 300);
+            timerAlumnos = setTimeout(() => { renderAlumnos(); }, 300);
         }
 
         function debounceBusquedaPersonal() {
             clearTimeout(timerPersonal);
-            timerPersonal = setTimeout(() => {
-                renderPersonal();
-            }, 300);
+            timerPersonal = setTimeout(() => { renderPersonal(); }, 300);
         }
 
         function renderAlumnos() {
             const tbody = document.getElementById('tablaAlumnos');
             tbody.innerHTML = '';
             const busqueda = (document.getElementById('searchAlumno')?.value || '').toLowerCase();
+            const zonaFiltro = document.getElementById('filtroZonaAlumno').value;
+            const centroFiltro = document.getElementById('filtroCentroAlumno').value;
             
             let lista = dbAlumnos.filter(al => {
+                const zona = obtenerValorCampo(al, ['zona']);
+                const centro = obtenerValorCampo(al, ['centro']);
+                
+                if (zonaFiltro && zona !== zonaFiltro) return false;
+                if (centroFiltro && centro !== centroFiltro) return false;
+
                 const textoFila = JSON.stringify(al).toLowerCase();
-                const coincide = textoFila.includes(busqueda);
-                if (!coincide) return false;
-                return esRegistroPermitido(al);
+                return textoFila.includes(busqueda);
             });
 
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:#718096; white-space: normal;">No hay registros de alumnos para mostrar.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:#718096; white-space: normal;">No hay registros de alumnos que coincidan con los filtros.</td></tr>`;
                 return;
             }
 
@@ -732,12 +868,14 @@
             const tbody = document.getElementById('tablaPersonal');
             tbody.innerHTML = '';
             const busqueda = (document.getElementById('searchPersonal')?.value || '').toLowerCase();
+            const zonaFiltro = document.getElementById('filtroZonaPersonal').value;
             
             let lista = dbPersonal.filter(p => {
+                const zona = obtenerValorCampo(p, ['zona']);
+                if (zonaFiltro && zona !== zonaFiltro) return false;
+
                 const textoFila = JSON.stringify(p).toLowerCase();
-                const coincide = textoFila.includes(busqueda);
-                if (!coincide) return false;
-                return esRegistroPermitido(p);
+                return textoFila.includes(busqueda);
             });
 
             if (lista.length === 0) {
@@ -822,6 +960,7 @@
             registroSeleccionadoActual = { tipo: 'Alumno', data: al };
 
             document.getElementById('modalTitulo').textContent = "Credencial e Identificación del Alumno";
+            document.getElementById('modalFooterButtons').style.display = 'flex';
             
             const html = `
                 <div class="credencial-preview">
@@ -869,6 +1008,7 @@
             registroSeleccionadoActual = { tipo: 'Personal', data: p, plazas: plazasDocente.length > 0 ? plazasDocente : [p] };
 
             document.getElementById('modalTitulo').textContent = "Ficha Técnica y Plazas del Personal";
+            document.getElementById('modalFooterButtons').style.display = 'flex';
             
             const nombreCompleto = `${obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(p, ['apellido materno', 'materno'])}`;
             
@@ -944,6 +1084,56 @@
             document.getElementById('fichaModal').style.display = 'flex';
         }
 
+        // NUEVA FUNCIÓN: IMPRESIÓN MASIVA DE CREDENCIALES EN LOTE
+        function imprimirCredencialesLote() {
+            const zonaFiltro = document.getElementById('filtroZonaAlumno').value;
+            const centroFiltro = document.getElementById('filtroCentroAlumno').value;
+
+            let lista = dbAlumnos.filter(al => {
+                const zona = obtenerValorCampo(al, ['zona']);
+                const centro = obtenerValorCampo(al, ['centro']);
+                if (zonaFiltro && zona !== zonaFiltro) return false;
+                if (centroFiltro && centro !== centroFiltro) return false;
+                return true;
+            });
+
+            if (lista.length === 0) {
+                alert("No hay alumnos en el filtro actual para generar credenciales en lote.");
+                return;
+            }
+
+            // Tomamos máximo los primeros 10 para una impresión limpia en lote o todos si se desea
+            let credencialesHtml = '<div class="batch-grid-print">';
+            lista.slice(0, 10).forEach(al => {
+                credencialesHtml += `
+                    <div class="credencial-preview" style="transform: scale(0.9); margin-bottom: 10px;">
+                        <div class="credencial-header" style="padding: 6px;">
+                            <h4 style="font-size: 0.75rem;">SECRETARÍA DE EDUCACIÓN DE DURANGO</h4>
+                            <h5 style="font-size: 0.65rem; font-weight: normal;">USAER - CREDENCIAL ESCOLAR</h5>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">ALUMNO(A)</div>
+                            <div style="font-size: 0.9rem; color: #1a365d; font-weight: bold;">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.7rem; text-align: left; background: #f7fafc; padding: 4px; border-radius: 4px;">
+                            <div><strong>CURP:</strong> ${obtenerValorCampo(al, ['curp'])}</div>
+                            <div><strong>GRADO:</strong> ${obtenerValorCampo(al, ['nivel'])} - ${obtenerValorCampo(al, ['grado/taller', 'grado'])}</div>
+                        </div>
+                        <div style="text-align: left; background: #ebf8ff; padding: 4px; border-radius: 4px; margin-top: 5px; font-size: 0.7rem;">
+                            <strong>Escuela:</strong> ${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}<br>
+                            <strong>Apoyo:</strong> ${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}
+                        </div>
+                    </div>
+                `;
+            });
+            credencialesHtml += '</div>';
+
+            document.getElementById('modalTitulo').textContent = `Impresión Masiva de Credenciales (${Math.min(lista.length, 10)} de ${lista.length})`;
+            document.getElementById('modalContenidoFicha').innerHTML = credencialesHtml;
+            document.getElementById('modalFooterButtons').style.display = 'flex';
+            document.getElementById('fichaModal').style.display = 'flex';
+        }
+
         function cerrarFichaModal(event) {
             document.getElementById('fichaModal').style.display = 'none';
         }
@@ -953,7 +1143,7 @@
         }
 
         function exportarExcel() {
-            const data = dbAlumnos.filter(al => esRegistroPermitido(al)).map((al, idx) => ({
+            const data = dbAlumnos.map((al, idx) => ({
                 "NP": idx + 1,
                 "Zona": obtenerValorCampo(al, ['zona']),
                 "Centro": obtenerValorCampo(al, ['centro']),
@@ -963,7 +1153,7 @@
                 "Nombre del alumno": obtenerValorCampo(al, ['nombre del alumno', 'nombre']),
                 "CURP": obtenerValorCampo(al, ['curp']),
                 "Sexo": obtenerValorCampo(al, ['sexo']),
-                "D": obtenerVOlarCampo(al, ['d']),
+                "D": obtenerValorCampo(al, ['d']),
                 "M": obtenerValorCampo(al, ['m']),
                 "A": obtenerValorCampo(al, ['a']),
                 "I": obtenerValorCampo(al, ['i']),
@@ -972,11 +1162,10 @@
                 "S.F": obtenerValorCampo(al, ['s.f']),
                 "P/NP": obtenerValorCampo(al, ['p/np']),
                 "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
+                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
-            
             const colWidths = Object.keys(data[0] || {}).map(key => ({
                 wch: Math.max(key.length, ...data.map(row => (row[key] ? row[key].toString().length : 0))) + 3
             }));
