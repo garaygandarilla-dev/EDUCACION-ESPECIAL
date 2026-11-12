@@ -591,7 +591,6 @@
         let registroSeleccionadoActual = null;
 
         window.onload = function() {
-            // Eliminamos cualquier rastro previo de datos en caché
             localStorage.removeItem('usaer_alumnos');
             localStorage.removeItem('usaer_personal');
 
@@ -673,10 +672,9 @@
 
         async function sincronizarTodo() {
             const badge = document.getElementById('syncBadge');
-            badge.textContent = "Descargando datos reales de Google Sheets...";
+            badge.textContent = "Descargando datos limpios...";
             badge.className = "sync-status sync-loading";
 
-            // 1. Vaciamos las listas en memoria y en pantalla antes de pedir datos nuevos
             dbAlumnos = [];
             dbPersonal = [];
             document.getElementById('filtroZonaAlumno').innerHTML = '<option value="">Todas las Zonas</option>';
@@ -721,7 +719,7 @@
             renderPersonal();
             actualizarEstadisticas();
 
-            badge.textContent = "Sheets Conectados (En vivo)";
+            badge.textContent = "Sheets Conectados";
             badge.className = "sync-status sync-online";
 
             const ahora = new Date();
@@ -729,7 +727,6 @@
         }
 
         function poblarFiltros() {
-            // Alumnos - Zona (solo lee exactamente lo que hay en la columna Zona)
             const zonasAlumnos = [...new Set(
                 dbAlumnos
                     .map(al => obtenerValorCampoEstricto(al, ['zona']).trim())
@@ -740,7 +737,6 @@
             selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + 
                 zonasAlumnos.map(z => `<option value="${z}">${z}</option>`).join('');
 
-            // Alumnos - Centro (solo lee exactamente lo que hay en la columna Centro)
             const centrosAlumnos = [...new Set(
                 dbAlumnos
                     .map(al => obtenerValorCampoEstricto(al, ['centro']).trim())
@@ -751,7 +747,6 @@
             selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + 
                 centrosAlumnos.map(c => `<option value="${c}">${c}</option>`).join('');
 
-            // Personal - Zona
             const zonasPersonal = [...new Set(
                 dbPersonal
                     .map(p => obtenerValorCampoEstricto(p, ['zona']).trim())
@@ -762,7 +757,6 @@
             selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + 
                 zonasPersonal.map(z => `<option value="${z}">${z}</option>`).join('');
 
-            // Personal - Centro
             const centrosPersonal = [...new Set(
                 dbPersonal
                     .map(p => obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']).trim())
@@ -790,7 +784,6 @@
             let strVal = valor.toString().trim();
             if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0' || strVal === '-') return '';
 
-            // 1. Número serial de Google Sheets / Excel
             if (!isNaN(strVal) && Number(strVal) > 15000 && Number(strVal) < 70000) {
                 const serial = Math.floor(Number(strVal));
                 const utcDays = serial - 25569;
@@ -803,7 +796,6 @@
                 }
             }
 
-            // 2. Formato ISO (ej: "2018-09-01T05:00:00.000Z" o "2018-09-01")
             const isoMatch = strVal.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
             if (isoMatch) {
                 const y = isoMatch[1];
@@ -812,7 +804,6 @@
                 return `${d}/${m}/${y}`;
             }
 
-            // 3. Formato DD/MM/YYYY o DD-MM-YYYY
             const latamMatch = strVal.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
             if (latamMatch) {
                 let p1 = parseInt(latamMatch[1], 10);
@@ -826,7 +817,6 @@
                 return `${String(p1).padStart(2, '0')}/${String(p2).padStart(2, '0')}/${y}`;
             }
 
-            // 4. Texto largo de fecha JS
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
                 const d = String(fechaObj.getDate()).padStart(2, '0');
