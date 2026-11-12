@@ -698,11 +698,12 @@
             document.getElementById('statUltimaSinc').textContent = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
+        // CARGA LOS FILTROS EXACTAMENTE CON EL TEXTO ORIGINAL DE GOOGLE SHEETS (SIN AÑADIR "ZONA" NI "U.S.A.E.R")
         function poblarFiltros() {
             const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['zona'])).filter(Boolean))].sort();
             const selectZonaAl = document.getElementById('filtroZonaAlumno');
             const zonaActualAl = selectZonaAl.value;
-            selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>Zona ${z}</option>`).join('');
+            selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>${z}</option>`).join('');
 
             const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['centro'])).filter(Boolean))].sort();
             const selectCentroAl = document.getElementById('filtroCentroAlumno');
@@ -712,7 +713,7 @@
             const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampo(p, ['zona'])).filter(Boolean))].sort();
             const selectZonaPr = document.getElementById('filtroZonaPersonal');
             const zonaActualPr = selectZonaPr.value;
-            selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + zonasPersonal.map(z => `<option value="${z}" ${z === zonaActualPr ? 'selected' : ''}>Zona ${z}</option>`).join('');
+            selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + zonasPersonal.map(z => `<option value="${z}" ${z === zonaActualPr ? 'selected' : ''}>${z}</option>`).join('');
         }
 
         function actualizarEstadisticas() {
@@ -726,13 +727,11 @@
             document.getElementById('statCondiciones').textContent = conCondicion;
         }
 
-        // FUNCIÓN MEJORADA DE FORMATEO DE FECHAS (DETECTA SERIES NUMÉRICAS Y TEXTOS)
         function formatearFecha(valor) {
             if (!valor) return '';
             const strVal = valor.toString().trim();
             if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0') return '';
 
-            // Si viene en formato serial de Excel (ej: 45288)
             if (!isNaN(strVal) && Number(strVal) > 30000 && Number(strVal) < 60000) {
                 const fechaExcel = new Date((Number(strVal) - (25567 + 2)) * 86400 * 1000);
                 if (!isNaN(fechaExcel.getTime())) {
@@ -743,7 +742,6 @@
                 }
             }
 
-            // Intento estándar de conversión de fecha
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
                 const d = String(fechaObj.getDate()).padStart(2, '0');
