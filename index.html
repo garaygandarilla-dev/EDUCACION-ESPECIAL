@@ -494,6 +494,16 @@
             }
         };
 
+        // Escucha global de la tecla ESC para cerrar la ventana modal si está abierta
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                const modal = document.getElementById('fichaModal');
+                if (modal && modal.style.display === 'flex') {
+                    cerrarFichaModalDirecto();
+                }
+            }
+        });
+
         function toggleMostrarPassword() {
             const passInput = document.getElementById('loginPass');
             if (passInput.type === 'password') {
@@ -953,7 +963,7 @@
                 "Nombre del alumno": obtenerValorCampo(al, ['nombre del alumno', 'nombre']),
                 "CURP": obtenerValorCampo(al, ['curp']),
                 "Sexo": obtenerValorCampo(al, ['sexo']),
-                "D": obtenerValorCampo(al, ['d']),
+                "D": obtenerVOlarCampo(al, ['d']),
                 "M": obtenerValorCampo(al, ['m']),
                 "A": obtenerValorCampo(al, ['a']),
                 "I": obtenerValorCampo(al, ['i']),
