@@ -504,7 +504,13 @@
                                 <option value="">Todas las Zonas</option>
                             </select>
                         </div>
-                        <div class="form-group" style="grid-column: span 3;">
+                        <div class="form-group">
+                            <label>Filtrar por Centro de Trabajo:</label>
+                            <select id="filtroCentroPersonal" onchange="renderPersonal()">
+                                <option value="">Todos los Centros</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
                             <label>Búsqueda General:</label>
                             <input type="text" id="searchPersonal" oninput="debounceBusquedaPersonal()" placeholder="🔍 Buscar por nombre, apellidos, CURP, función o centro...">
                         </div>
@@ -577,14 +583,19 @@
         const CLAVE_CORRECTA = "LAGUNA2026";
 
         let usuarioSesion = JSON.parse(localStorage.getItem('usaer_sesion') || 'null');
-        let dbAlumnos = JSON.parse(localStorage.getItem('usaer_alumnos') || '[]');
-        let dbPersonal = JSON.parse(localStorage.getItem('usaer_personal') || '[]');
+        // Siempre iniciamos arreglos limpios para evitar arrastrar caché vieja de pruebas anteriores
+        let dbAlumnos = [];
+        let dbPersonal = [];
 
         let timerAlumnos = null;
         let timerPersonal = null;
         let registroSeleccionadoActual = null;
 
         window.onload = function() {
+            // Limpiamos cachés de datos viejos al iniciar
+            localStorage.removeItem('usaer_alumnos');
+            localStorage.removeItem('usaer_personal');
+
             if (usuarioSesion) {
                 iniciarModoApp();
             } else {
@@ -638,6 +649,8 @@
 
         function cerrarSesion() {
             localStorage.removeItem('usaer_sesion');
+            localStorage.removeItem('usaer_alumnos');
+            localStorage.removeItem('usaer_personal');
             usuarioSesion = null;
             location.reload();
         }
@@ -661,27 +674,38 @@
 
         async function sincronizarTodo() {
             const badge = document.getElementById('syncBadge');
-            badge.textContent = "Sincronizando...";
+            badge.textContent = "Sincronizando con Google Sheets...";
             badge.className = "sync-status sync-loading";
+
+            // Agregamos parámetro anti-caché (?t=...) para obligar al navegador a traer lo más reciente de Google Sheets
+            const ts = new Date().getTime();
 
             if (URL_ALUMNOS) {
                 try {
-                    const res = await fetch(URL_ALUMNOS);
+                    const res = await fetch(`${URL_ALUMNOS}?t=${ts}`);
                     const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        dbAlumnos = data;
-                        localStorage.setItem('usaer_alumnos', JSON.stringify(dbAlumnos));
+                    if (Array.isArray(data)) {
+                        // Filtramos filas vacías o encabezados repetidos
+                        dbAlumnos = data.filter(row => {
+                            const nom = obtenerValorCampoEstricto(row, ['nombre del alumno', 'nombre', 'alumno']);
+                            const curp = obtenerValorCampoEstricto(row, ['curp']);
+                            return (nom && nom.toLowerCase() !== 'nombre del alumno') || (curp && curp.length >= 10);
+                        });
                     }
                 } catch (e) { console.warn("Error cargando Alumnos:", e); }
             }
 
             if (URL_PLANTILLA) {
                 try {
-                    const res = await fetch(URL_PLANTILLA);
+                    const res = await fetch(`${URL_PLANTILLA}?t=${ts}`);
                     const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        dbPersonal = data;
-                        localStorage.setItem('usaer_personal', JSON.stringify(dbPersonal));
+                    if (Array.isArray(data)) {
+                        // Filtramos filas vacías o encabezados repetidos
+                        dbPersonal = data.filter(row => {
+                            const nom = obtenerValorCampoEstricto(row, ['nombre(s)', 'nombres', 'nombre']);
+                            const curp = obtenerValorCampoEstricto(row, ['clave curp', 'curp']);
+                            return (nom && nom.toLowerCase() !== 'nombre(s)') || (curp && curp.length >= 10);
+                        });
                     }
                 } catch (e) { console.warn("Error cargando Plantilla:", e); }
             }
@@ -691,29 +715,38 @@
             renderPersonal();
             actualizarEstadisticas();
 
-            badge.textContent = "Sheets Conectados";
+            badge.textContent = "Sheets Conectados (Actualizado)";
             badge.className = "sync-status sync-online";
 
             const ahora = new Date();
             document.getElementById('statUltimaSinc').textContent = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
 
-        // CARGA LOS FILTROS EXACTAMENTE CON EL TEXTO ORIGINAL DE GOOGLE SHEETS (SIN AÑADIR "ZONA" NI "U.S.A.E.R")
+        // POBLA LOS FILTROS EXCLUSIVAMENTE CON LOS VALORES REALES DE LAS COLUMNAS ZONA Y CENTRO
         function poblarFiltros() {
-            const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['zona'])).filter(Boolean))].sort();
+            // Alumnos - Zona
+            const zonasAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampoEstricto(al, ['zona'])).filter(z => z && z.length < 25))].sort();
             const selectZonaAl = document.getElementById('filtroZonaAlumno');
             const zonaActualAl = selectZonaAl.value;
             selectZonaAl.innerHTML = '<option value="">Todas las Zonas</option>' + zonasAlumnos.map(z => `<option value="${z}" ${z === zonaActualAl ? 'selected' : ''}>${z}</option>`).join('');
 
-            const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampo(al, ['centro'])).filter(Boolean))].sort();
+            // Alumnos - Centro
+            const centrosAlumnos = [...new Set(dbAlumnos.map(al => obtenerValorCampoEstricto(al, ['centro'])).filter(Boolean))].sort();
             const selectCentroAl = document.getElementById('filtroCentroAlumno');
             const centroActualAl = selectCentroAl.value;
             selectCentroAl.innerHTML = '<option value="">Todos los Centros</option>' + centrosAlumnos.map(c => `<option value="${c}" ${c === centroActualAl ? 'selected' : ''}>${c}</option>`).join('');
 
-            const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampo(p, ['zona'])).filter(Boolean))].sort();
+            // Personal - Zona
+            const zonasPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampoEstricto(p, ['zona'])).filter(z => z && z.length < 25))].sort();
             const selectZonaPr = document.getElementById('filtroZonaPersonal');
             const zonaActualPr = selectZonaPr.value;
             selectZonaPr.innerHTML = '<option value="">Todas las Zonas</option>' + zonasPersonal.map(z => `<option value="${z}" ${z === zonaActualPr ? 'selected' : ''}>${z}</option>`).join('');
+
+            // Personal - Centro
+            const centrosPersonal = [...new Set(dbPersonal.map(p => obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro'])).filter(Boolean))].sort();
+            const selectCentroPr = document.getElementById('filtroCentroPersonal');
+            const centroActualPr = selectCentroPr.value;
+            selectCentroPr.innerHTML = '<option value="">Todos los Centros</option>' + centrosPersonal.map(c => `<option value="${c}" ${c === centroActualPr ? 'selected' : ''}>${c}</option>`).join('');
         }
 
         function actualizarEstadisticas() {
@@ -721,43 +754,75 @@
             document.getElementById('statTotalPersonal').textContent = dbPersonal.length;
 
             const conCondicion = dbAlumnos.filter(al => {
-                const cond = obtenerValorCampo(al, ['condicion', 'diagnostico']);
+                const cond = obtenerValorCampoEstricto(al, ['condicion', 'diagnostico']);
                 return cond && cond.toLowerCase() !== 's/n' && cond.toLowerCase() !== 'ninguna' && cond.toLowerCase() !== 'regular';
             }).length;
             document.getElementById('statCondiciones').textContent = conCondicion;
         }
 
+        // FORMATEO DE FECHAS INTEGRAL (SOPORTA ISO, DD/MM/YYYY, DD-MM-YYYY, MM/DD/YYYY Y SERIALES DE EXCEL)
         function formatearFecha(valor) {
-            if (!valor) return '';
-            const strVal = valor.toString().trim();
-            if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0') return '';
+            if (valor === undefined || valor === null) return '';
+            let strVal = valor.toString().trim();
+            if (strVal === '' || strVal.toLowerCase() === 'n/a' || strVal === '0' || strVal === '-') return '';
 
-            if (!isNaN(strVal) && Number(strVal) > 30000 && Number(strVal) < 60000) {
-                const fechaExcel = new Date((Number(strVal) - (25567 + 2)) * 86400 * 1000);
+            // 1. Si es número serial de Google Sheets / Excel (ej: 44562 o 44562.5)
+            if (!isNaN(strVal) && Number(strVal) > 15000 && Number(strVal) < 70000) {
+                const serial = Math.floor(Number(strVal));
+                const utcDays = serial - 25569;
+                const fechaExcel = new Date(utcDays * 86400 * 1000);
                 if (!isNaN(fechaExcel.getTime())) {
-                    const d = String(fechaExcel.getDate()).padStart(2, '0');
-                    const m = String(fechaExcel.getMonth() + 1).padStart(2, '0');
-                    const y = fechaExcel.getFullYear();
+                    const d = String(fechaExcel.getUTCDate()).padStart(2, '0');
+                    const m = String(fechaExcel.getUTCMonth() + 1).padStart(2, '0');
+                    const y = fechaExcel.getUTCFullYear();
                     return `${d}/${m}/${y}`;
                 }
             }
 
+            // 2. Si viene con formato ISO con hora (ej: "2018-09-01T05:00:00.000Z" o "2018-09-01")
+            const isoMatch = strVal.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (isoMatch) {
+                const y = isoMatch[1];
+                const m = isoMatch[2].padStart(2, '0');
+                const d = isoMatch[3].padStart(2, '0');
+                return `${d}/${m}/${y}`;
+            }
+
+            // 3. Si ya viene en formato DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+            const latamMatch = strVal.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+            if (latamMatch) {
+                let p1 = parseInt(latamMatch[1], 10);
+                let p2 = parseInt(latamMatch[2], 10);
+                let y = latamMatch[3];
+                if (y.length === 2) y = (parseInt(y, 10) > 30 ? '19' : '20') + y;
+
+                // Si el segundo número es mayor a 12, venía en formato MM/DD/YYYY -> invertimos
+                if (p2 > 12 && p1 <= 12) {
+                    return `${String(p2).padStart(2, '0')}/${String(p1).padStart(2, '0')}/${y}`;
+                }
+                return `${String(p1).padStart(2, '0')}/${String(p2).padStart(2, '0')}/${y}`;
+            }
+
+            // 4. Si viene texto largo de fecha en inglés de JavaScript (ej: "Mon Sep 03 2018 00:00:00 GMT-0500")
             const fechaObj = new Date(strVal);
             if (!isNaN(fechaObj.getTime())) {
                 const d = String(fechaObj.getDate()).padStart(2, '0');
                 const m = String(fechaObj.getMonth() + 1).padStart(2, '0');
                 const y = fechaObj.getFullYear();
-                if (y > 1900 && y < 2100) {
+                if (y > 1940 && y < 2100) {
                     return `${d}/${m}/${y}`;
                 }
             }
+
             return strVal;
         }
 
-        function obtenerValorCampo(obj, posiblesNombres) {
+        // BÚSQUEDA ESTRICTA DE ENCABEZADOS PARA EVITAR QUE MEZCLE COLUMNAS
+        function obtenerValorCampoEstricto(obj, posiblesNombres) {
             if (!obj) return '';
             const llaves = Object.keys(obj);
             
+            // Primero buscamos coincidencia exacta (ignorando mayúsculas, espacios extras y acentos)
             for (let nombre of posiblesNombres) {
                 const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
                 const llaveExacta = llaves.find(k => {
@@ -766,22 +831,6 @@
                 });
                 if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta] !== '') {
                     const valorStr = obj[llaveExacta].toString().trim();
-                    if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento') || limpiaN.includes('promocion') || limpiaN.includes('ingreso')) {
-                        return formatearFecha(valorStr);
-                    }
-                    return valorStr;
-                }
-            }
-
-            for (let nombre of posiblesNombres) {
-                const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
-                const llaveEncontrada = llaves.find(k => {
-                    const limpiaK = k.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
-                    if (limpiaN === 'nombre' && limpiaK.includes('centro')) return false;
-                    return limpiaK.includes(limpiaN);
-                });
-                if (llaveEncontrada && obj[llaveEncontrada] !== undefined && obj[llaveEncontrada] !== null && obj[llaveEncontrada] !== '') {
-                    const valorStr = obj[llaveEncontrada].toString().trim();
                     if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento') || limpiaN.includes('promocion') || limpiaN.includes('ingreso')) {
                         return formatearFecha(valorStr);
                     }
@@ -809,8 +858,8 @@
             const centroFiltro = document.getElementById('filtroCentroAlumno').value;
             
             let lista = dbAlumnos.filter(al => {
-                const zona = obtenerValorCampo(al, ['zona']);
-                const centro = obtenerValorCampo(al, ['centro']);
+                const zona = obtenerValorCampoEstricto(al, ['zona']);
+                const centro = obtenerValorCampoEstricto(al, ['centro']);
                 
                 if (zonaFiltro && zona !== zonaFiltro) return false;
                 if (centroFiltro && centro !== centroFiltro) return false;
@@ -826,48 +875,48 @@
 
             let htmlAcumulado = "";
             lista.forEach((al, idx) => {
-                const zona = obtenerValorCampo(al, ['zona']);
-                const centro = obtenerValorCampo(al, ['centro']);
-                const clave = obtenerValorCampo(al, ['clave']);
-                const nivel = obtenerValorCampo(al, ['nivel']);
-                const gradoTaller = obtenerValorCampo(al, ['grado/taller', 'grado', 'taller']);
-                const nombreAlumno = obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno']);
-                const curp = obtenerValorCampo(al, ['curp']);
-                const sexo = obtenerValorCampo(al, ['sexo']);
-                const d = obtenerValorCampo(al, ['d']);
-                const m = obtenerValorCampo(al, ['m']);
-                const a = obtenerValorCampo(al, ['a']);
-                const i = obtenerValorCampo(al, ['i']);
-                const f = obtenerValorCampo(al, ['f']);
-                const condicion = obtenerValorCampo(al, ['condicion', 'diagnostico']);
-                const sf = obtenerValorCampo(al, ['s.f', 'sf']);
-                const pnp = obtenerValorCampo(al, ['p/np', 'pnp']);
-                const nombreEscuela = obtenerValorCampo(al, ['nombre de la escuela', 'escuela']);
-                const maestroApoyo = obtenerValorCampo(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo']);
+                const zona = obtenerValorCampoEstricto(al, ['zona']);
+                const centro = obtenerValorCampoEstricto(al, ['centro']);
+                const clave = obtenerValorCampoEstricto(al, ['clave']);
+                const nivel = obtenerValorCampoEstricto(al, ['nivel']);
+                const gradoTaller = obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado', 'taller']);
+                const nombreAlumno = obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno']);
+                const curp = obtenerValorCampoEstricto(al, ['curp']);
+                const sexo = obtenerValorCampoEstricto(al, ['sexo']);
+                const d = obtenerValorCampoEstricto(al, ['d']);
+                const m = obtenerValorCampoEstricto(al, ['m']);
+                const a = obtenerValorCampoEstricto(al, ['a']);
+                const i = obtenerValorCampoEstricto(al, ['i']);
+                const f = obtenerValorCampoEstricto(al, ['f']);
+                const condicion = obtenerValorCampoEstricto(al, ['condicion', 'condición', 'diagnostico', 'diagnóstico']);
+                const sf = obtenerValorCampoEstricto(al, ['s.f', 'sf']);
+                const pnp = obtenerValorCampoEstricto(al, ['p/np', 'pnp']);
+                const nombreEscuela = obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela']);
+                const maestroApoyo = obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo']);
 
                 const jsonStr = encodeURIComponent(JSON.stringify(al));
 
                 htmlAcumulado += `
                     <tr onclick='abrirFichaAlumno(decodeURIComponent("${jsonStr}"))'>
                         <td class="td-corto">${idx + 1}</td>
-                        <td class="td-codigo">${zona || 'N/A'}</td>
-                        <td class="td-texto">${centro || 'N/A'}</td>
-                        <td class="td-codigo">${clave || 'N/A'}</td>
-                        <td class="td-texto">${nivel || 'N/A'}</td>
-                        <td class="td-codigo">${gradoTaller || 'N/A'}</td>
-                        <td class="td-texto"><strong>${nombreAlumno || 'N/A'}</strong></td>
-                        <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
-                        <td class="td-corto">${sexo || 'N/A'}</td>
+                        <td class="td-codigo">${zona || ''}</td>
+                        <td class="td-texto">${centro || ''}</td>
+                        <td class="td-codigo">${clave || ''}</td>
+                        <td class="td-texto">${nivel || ''}</td>
+                        <td class="td-codigo">${gradoTaller || ''}</td>
+                        <td class="td-texto"><strong>${nombreAlumno || ''}</strong></td>
+                        <td class="td-codigo"><strong>${curp || ''}</strong></td>
+                        <td class="td-corto">${sexo || ''}</td>
                         <td class="td-corto">${d || ''}</td>
                         <td class="td-corto">${m || ''}</td>
                         <td class="td-codigo">${a || ''}</td>
                         <td class="td-corto">${i || ''}</td>
                         <td class="td-corto">${f || ''}</td>
-                        <td class="td-texto">${condicion || 'N/A'}</td>
+                        <td class="td-texto">${condicion || ''}</td>
                         <td class="td-corto">${sf || ''}</td>
                         <td class="td-corto">${pnp || ''}</td>
-                        <td class="td-texto">${nombreEscuela || 'N/A'}</td>
-                        <td class="td-texto">${maestroApoyo || 'N/A'}</td>
+                        <td class="td-texto">${nombreEscuela || ''}</td>
+                        <td class="td-texto">${maestroApoyo || ''}</td>
                     </tr>
                 `;
             });
@@ -879,10 +928,13 @@
             tbody.innerHTML = '';
             const busqueda = (document.getElementById('searchPersonal')?.value || '').toLowerCase();
             const zonaFiltro = document.getElementById('filtroZonaPersonal').value;
+            const centroFiltro = document.getElementById('filtroCentroPersonal').value;
             
             let lista = dbPersonal.filter(p => {
-                const zona = obtenerValorCampo(p, ['zona']);
+                const zona = obtenerValorCampoEstricto(p, ['zona']);
+                const centro = obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']);
                 if (zonaFiltro && zona !== zonaFiltro) return false;
+                if (centroFiltro && centro !== centroFiltro) return false;
 
                 const textoFila = JSON.stringify(p).toLowerCase();
                 return textoFila.includes(busqueda);
@@ -895,69 +947,69 @@
 
             let htmlAcumulado = "";
             lista.forEach((p, idx) => {
-                const zona = obtenerValorCampo(p, ['zona']);
-                const nombreCentro = obtenerValorCampo(p, ['nombre del centro', 'centro de trabajo']);
+                const zona = obtenerValorCampoEstricto(p, ['zona']);
+                const nombreCentro = obtenerValorCampoEstricto(p, ['nombre del centro', 'centro de trabajo', 'centro']);
                 
-                const apPaterno = obtenerValorCampo(p, ['apellido paterno', 'paterno', 'primer apellido']);
-                const apMaterno = obtenerValorCampo(p, ['apellido materno', 'materno', 'segundo apellido']);
-                const nombreDocente = obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)']);
+                const apPaterno = obtenerValorCampoEstricto(p, ['apellido paterno', 'paterno', 'primer apellido']);
+                const apMaterno = obtenerValorCampoEstricto(p, ['apellido materno', 'materno', 'segundo apellido']);
+                const nombreDocente = obtenerValorCampoEstricto(p, ['nombre(s)', 'nombres', 'nombre']);
                 
-                const filiacon = obtenerValorCampo(p, ['filiacion', 'filiación']);
-                const sexo = obtenerValorCampo(p, ['sexo']);
-                const curp = obtenerValorCampo(p, ['clave curp', 'curp']);
-                const nombramiento = obtenerValorCampo(p, ['nombramiento', 'tipo de plaza', 'sostenimiento']) || 'Base';
-                const dep = obtenerValorCampo(p, ['dep']);
-                const unid = obtenerValorCampo(p, ['unid']);
-                const subUnid = obtenerValorCampo(p, ['sub unid']);
-                const categ = obtenerValorCampo(p, ['categ.']);
-                const hrs = obtenerValorCampo(p, ['hrs']);
-                const numPlaza = obtenerValorCampo(p, ['num. plaza']);
-                const codigo = obtenerValorCampo(p, ['código', 'codigo']);
+                const filiacon = obtenerValorCampoEstricto(p, ['filiacion', 'filiación']);
+                const sexo = obtenerValorCampoEstricto(p, ['sexo']);
+                const curp = obtenerValorCampoEstricto(p, ['clave curp', 'curp']);
+                const nombramiento = obtenerValorCampoEstricto(p, ['nombramiento / plaza', 'nombramiento', 'tipo de plaza', 'sostenimiento']) || 'Base';
+                const dep = obtenerValorCampoEstricto(p, ['dep']);
+                const unid = obtenerValorCampoEstricto(p, ['unid']);
+                const subUnid = obtenerValorCampoEstricto(p, ['sub unid', 'subunid']);
+                const categ = obtenerValorCampoEstricto(p, ['categ.', 'categ', 'categoria', 'categoría']);
+                const hrs = obtenerValorCampoEstricto(p, ['hrs', 'horas']);
+                const numPlaza = obtenerValorCampoEstricto(p, ['num. plaza', 'num plaza', 'numero de plaza']);
+                const codigo = obtenerValorCampoEstricto(p, ['código', 'codigo']);
                 
-                const fechaIngreso = obtenerValorCampo(p, ['fecha de ingreso']);
-                const fechaPromocion = obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']);
+                const fechaIngreso = obtenerValorCampoEstricto(p, ['fecha de ingreso']);
+                const fechaPromocion = obtenerValorCampoEstricto(p, ['fecha de promoción', 'fecha de promocion']);
 
-                const formAcademica = obtenerValorCampo(p, ['formación académica', 'formacion academica']);
-                const situacion = obtenerValorCampo(p, ['situación', 'situacion']);
-                const funcion = obtenerValorCampo(p, ['funcion', 'función']);
-                const horario = obtenerValorCampo(p, ['horario']);
-                const estadoCivil = obtenerValorCampo(p, ['estado civil']);
-                const domicilio = obtenerValorCampo(p, ['domicilio particular', 'domicilio']);
-                const telefono = obtenerValorCampo(p, ['telefono', 'teléfono', 'celular']);
-                const email = obtenerValorCampo(p, ['e-mail', 'correo', 'email']);
-                const status = (obtenerValorCampo(p, ['status', 'estado']) || 'SI').toUpperCase();
+                const formAcademica = obtenerValorCampoEstricto(p, ['formación académica', 'formacion academica']);
+                const situacion = obtenerValorCampoEstricto(p, ['situación', 'situacion']);
+                const funcion = obtenerValorCampoEstricto(p, ['funcion', 'función']);
+                const horario = obtenerValorCampoEstricto(p, ['horario']);
+                const estadoCivil = obtenerValorCampoEstricto(p, ['estado civil']);
+                const domicilio = obtenerValorCampoEstricto(p, ['domicilio particular', 'domicilio']);
+                const telefono = obtenerValorCampoEstricto(p, ['telefono / celular', 'telefono', 'teléfono', 'celular']);
+                const email = obtenerValorCampoEstricto(p, ['e-mail institucional', 'e-mail', 'correo', 'email']);
+                const status = (obtenerValorCampoEstricto(p, ['status', 'estado']) || 'SI').toUpperCase();
 
                 const jsonStr = encodeURIComponent(JSON.stringify(p));
 
                 htmlAcumulado += `
                     <tr onclick='abrirFichaPersonal(decodeURIComponent("${jsonStr}"))'>
                         <td class="td-corto">${idx + 1}</td>
-                        <td class="td-codigo">${zona || 'N/A'}</td>
-                        <td class="td-texto">${nombreCentro || 'N/A'}</td>
-                        <td class="td-texto"><strong>${apPaterno || 'N/A'}</strong></td>
-                        <td class="td-texto"><strong>${apMaterno || 'N/A'}</strong></td>
-                        <td class="td-texto"><strong>${nombreDocente || 'N/A'}</strong></td>
-                        <td class="td-codigo">${filiacon || 'N/A'}</td>
-                        <td class="td-corto">${sexo || 'N/A'}</td>
-                        <td class="td-codigo"><strong>${curp || 'N/A'}</strong></td>
+                        <td class="td-codigo">${zona || ''}</td>
+                        <td class="td-texto">${nombreCentro || ''}</td>
+                        <td class="td-texto"><strong>${apPaterno || ''}</strong></td>
+                        <td class="td-texto"><strong>${apMaterno || ''}</strong></td>
+                        <td class="td-texto"><strong>${nombreDocente || ''}</strong></td>
+                        <td class="td-codigo">${filiacon || ''}</td>
+                        <td class="td-corto">${sexo || ''}</td>
+                        <td class="td-codigo"><strong>${curp || ''}</strong></td>
                         <td class="td-texto">${nombramiento}</td>
-                        <td class="td-corto">${dep || 'N/A'}</td>
-                        <td class="td-corto">${unid || 'N/A'}</td>
-                        <td class="td-corto">${subUnid || 'N/A'}</td>
-                        <td class="td-codigo">${categ || 'N/A'}</td>
-                        <td class="td-corto">${hrs || 'N/A'}</td>
-                        <td class="td-codigo">${numPlaza || 'N/A'}</td>
-                        <td class="td-codigo">${codigo || 'N/A'}</td>
+                        <td class="td-corto">${dep || ''}</td>
+                        <td class="td-corto">${unid || ''}</td>
+                        <td class="td-corto">${subUnid || ''}</td>
+                        <td class="td-codigo">${categ || ''}</td>
+                        <td class="td-corto">${hrs || ''}</td>
+                        <td class="td-codigo">${numPlaza || ''}</td>
+                        <td class="td-codigo">${codigo || ''}</td>
                         <td class="td-codigo">${fechaIngreso}</td>
-                        <td class="td-texto">${formAcademica || 'N/A'}</td>
-                        <td class="td-texto">${situacion || 'N/A'}</td>
-                        <td class="td-texto">${funcion || 'N/A'}</td>
+                        <td class="td-texto">${formAcademica || ''}</td>
+                        <td class="td-texto">${situacion || ''}</td>
+                        <td class="td-texto">${funcion || ''}</td>
                         <td class="td-codigo">${fechaPromocion}</td>
-                        <td class="td-texto">${horario || 'N/A'}</td>
-                        <td class="td-texto">${estadoCivil || 'N/A'}</td>
-                        <td class="td-texto">${domicilio || 'N/A'}</td>
-                        <td class="td-codigo">${telefono || 'N/A'}</td>
-                        <td class="td-texto">${email || 'N/A'}</td>
+                        <td class="td-texto">${horario || ''}</td>
+                        <td class="td-texto">${estadoCivil || ''}</td>
+                        <td class="td-texto">${domicilio || ''}</td>
+                        <td class="td-codigo">${telefono || ''}</td>
+                        <td class="td-texto">${email || ''}</td>
                         <td class="col-center"><span class="${status === 'SI' || status === 'ACTIVO' ? 'badge-active' : 'badge-inactive'}">${status}</span></td>
                     </tr>
                 `;
@@ -980,25 +1032,25 @@
                     </div>
                     <div style="margin-bottom: 15px;">
                         <div style="font-size: 0.75rem; color: #718096; font-weight: bold;">NOMBRE DEL ALUMNO(A)</div>
-                        <div style="font-size: 1.1rem; color: #1a365d; font-weight: bold; margin-top: 2px;">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                        <div style="font-size: 1.1rem; color: #1a365d; font-weight: bold; margin-top: 2px;">${obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; text-align: left; background: #f7fafc; padding: 8px; border-radius: 6px;">
                         <div>
                             <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">CURP</div>
-                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampo(al, ['curp'])}</div>
+                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampoEstricto(al, ['curp'])}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">NIVEL / GRADO</div>
-                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampo(al, ['nivel'])} - ${obtenerValorCampo(al, ['grado/taller', 'grado', 'taller'])}</div>
+                            <div style="font-size: 0.8rem; font-weight: 600;">${obtenerValorCampoEstricto(al, ['nivel'])} - ${obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado', 'taller'])}</div>
                         </div>
                     </div>
                     <div style="text-align: left; background: #ebf8ff; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 0.8rem;">
-                        <strong>Escuela:</strong> ${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}<br>
-                        <strong>Centro USAER:</strong> ${obtenerValorCampo(al, ['centro'])} (Zona ${obtenerValorCampo(al, ['zona'])})<br>
-                        <strong>Maestro(a) de Apoyo:</strong> ${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}
+                        <strong>Escuela:</strong> ${obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela'])}<br>
+                        <strong>Centro:</strong> ${obtenerValorCampoEstricto(al, ['centro'])} (${obtenerValorCampoEstricto(al, ['zona'])})<br>
+                        <strong>Maestro(a) de Apoyo:</strong> ${obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo'])}
                     </div>
                     <div style="margin-top: 10px; font-size: 0.75rem; color: #e53e3e; font-weight: bold;">
-                        CONDICIÓN: ${obtenerValorCampo(al, ['condicion', 'diagnostico']) || 'REGULAR'}
+                        CONDICIÓN: ${obtenerValorCampoEstricto(al, ['condicion', 'condición', 'diagnostico', 'diagnóstico']) || 'REGULAR'}
                     </div>
                 </div>
             `;
@@ -1008,10 +1060,10 @@
 
         function abrirFichaPersonal(pJson) {
             const p = JSON.parse(pJson);
-            const curpSeleccionada = obtenerValorCampo(p, ['clave curp', 'curp']).toUpperCase();
+            const curpSeleccionada = obtenerValorCampoEstricto(p, ['clave curp', 'curp']).toUpperCase();
             
             const plazasDocente = dbPersonal.filter(item => {
-                const c = obtenerValorCampo(item, ['clave curp', 'curp']).toUpperCase();
+                const c = obtenerValorCampoEstricto(item, ['clave curp', 'curp']).toUpperCase();
                 return c === curpSeleccionada && curpSeleccionada !== '';
             });
 
@@ -1020,9 +1072,9 @@
             document.getElementById('modalTitulo').textContent = "Ficha Técnica y Plazas del Personal";
             document.getElementById('modalFooterButtons').style.display = 'flex';
             
-            const nombreCompleto = `${obtenerValorCampo(p, ['nombre', 'nombres', 'nombre(s)'])} ${obtenerValorCampo(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampo(p, ['apellido materno', 'materno'])}`;
+            const nombreCompleto = `${obtenerValorCampoEstricto(p, ['nombre(s)', 'nombres', 'nombre'])} ${obtenerValorCampoEstricto(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampoEstricto(p, ['apellido materno', 'materno'])}`;
             
-            const fechaPromocionDocente = obtenerValorCampo(p, ['fecha de promoción', 'fecha de promocion']);
+            const fechaPromocionDocente = obtenerValorCampoEstricto(p, ['fecha de promoción', 'fecha de promocion']);
 
             let plazasHtml = '';
             (registroSeleccionadoActual.plazas).forEach((plaza, index) => {
@@ -1030,16 +1082,16 @@
                     <div class="plaza-box">
                         <strong>Plaza / Clave Presupuestal #${index + 1}</strong>
                         <div class="plaza-grid">
-                            <div><strong>DEP:</strong> ${obtenerValorCampo(plaza, ['dep']) || 'N/A'}</div>
-                            <div><strong>UNID:</strong> ${obtenerValorCampo(plaza, ['unid']) || 'N/A'}</div>
-                            <div><strong>SUB UNID:</strong> ${obtenerValorCampo(plaza, ['sub unid']) || 'N/A'}</div>
-                            <div><strong>CATEG:</strong> ${obtenerValorCampo(plaza, ['categ.']) || 'N/A'}</div>
-                            <div><strong>HRS:</strong> ${obtenerValorCampo(plaza, ['hrs']) || 'N/A'}</div>
-                            <div><strong>NUM. PLAZA:</strong> ${obtenerValorCampo(plaza, ['num. plaza']) || 'N/A'}</div>
+                            <div><strong>DEP:</strong> ${obtenerValorCampoEstricto(plaza, ['dep']) || 'N/A'}</div>
+                            <div><strong>UNID:</strong> ${obtenerValorCampoEstricto(plaza, ['unid']) || 'N/A'}</div>
+                            <div><strong>SUB UNID:</strong> ${obtenerValorCampoEstricto(plaza, ['sub unid', 'subunid']) || 'N/A'}</div>
+                            <div><strong>CATEG:</strong> ${obtenerValorCampoEstricto(plaza, ['categ.', 'categ']) || 'N/A'}</div>
+                            <div><strong>HRS:</strong> ${obtenerValorCampoEstricto(plaza, ['hrs', 'horas']) || 'N/A'}</div>
+                            <div><strong>NUM. PLAZA:</strong> ${obtenerValorCampoEstricto(plaza, ['num. plaza', 'num plaza']) || 'N/A'}</div>
                         </div>
                         <div style="margin-top: 6px; font-size: 0.85rem; color: #4a5568;">
-                            • <strong>Centro de Trabajo:</strong> ${obtenerValorCampo(plaza, ['nombre del centro', 'centro_trabajo'])} (Zona: ${obtenerValorCampo(plaza, ['zona'])})<br>
-                            • <strong>Función:</strong> ${obtenerValorCampo(plaza, ['funcion', 'función'])} | <strong>Situación:</strong> ${obtenerValorCampo(plaza, ['situación', 'situacion'])}
+                            • <strong>Centro de Trabajo:</strong> ${obtenerValorCampoEstricto(plaza, ['nombre del centro', 'centro de trabajo', 'centro'])} (${obtenerValorCampoEstricto(plaza, ['zona'])})<br>
+                            • <strong>Función:</strong> ${obtenerValorCampoEstricto(plaza, ['funcion', 'función'])} | <strong>Situación:</strong> ${obtenerValorCampoEstricto(plaza, ['situación', 'situacion'])}
                         </div>
                     </div>
                 `;
@@ -1057,15 +1109,15 @@
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Filiación</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['filiacion', 'filiación'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['filiacion', 'filiación'])}</div>
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Formación Académica</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['formación académica', 'formacion academica'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['formación académica', 'formacion academica'])}</div>
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Fecha de Ingreso</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['fecha de ingreso'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['fecha de ingreso'])}</div>
                     </div>
                     ${fechaPromocionDocente ? `
                     <div class="ficha-item">
@@ -1078,15 +1130,15 @@
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Teléfono de Contacto</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['telefono', 'teléfono', 'celular'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['telefono / celular', 'telefono', 'teléfono', 'celular'])}</div>
                     </div>
                     <div class="ficha-item">
                         <div class="ficha-label">Correo Electrónico</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['e-mail', 'correo', 'email'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['e-mail institucional', 'e-mail', 'correo', 'email'])}</div>
                     </div>
                     <div class="ficha-item full">
                         <div class="ficha-label">Domicilio Particular</div>
-                        <div class="ficha-val">${obtenerValorCampo(p, ['domicilio particular', 'domicilio'])}</div>
+                        <div class="ficha-val">${obtenerValorCampoEstricto(p, ['domicilio particular', 'domicilio'])}</div>
                     </div>
                 </div>
             `;
@@ -1099,8 +1151,8 @@
             const centroFiltro = document.getElementById('filtroCentroAlumno').value;
 
             let lista = dbAlumnos.filter(al => {
-                const zona = obtenerValorCampo(al, ['zona']);
-                const centro = obtenerValorCampo(al, ['centro']);
+                const zona = obtenerValorCampoEstricto(al, ['zona']);
+                const centro = obtenerValorCampoEstricto(al, ['centro']);
                 if (zonaFiltro && zona !== zonaFiltro) return false;
                 if (centroFiltro && centro !== centroFiltro) return false;
                 return true;
@@ -1121,15 +1173,15 @@
                         </div>
                         <div style="margin-bottom: 8px;">
                             <div style="font-size: 0.65rem; color: #718096; font-weight: bold;">ALUMNO(A)</div>
-                            <div style="font-size: 0.9rem; color: #1a365d; font-weight: bold;">${obtenerValorCampo(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                            <div style="font-size: 0.9rem; color: #1a365d; font-weight: bold;">${obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.7rem; text-align: left; background: #f7fafc; padding: 4px; border-radius: 4px;">
-                            <div><strong>CURP:</strong> ${obtenerValorCampo(al, ['curp'])}</div>
-                            <div><strong>GRADO:</strong> ${obtenerValorCampo(al, ['nivel'])} - ${obtenerValorCampo(al, ['grado/taller', 'grado'])}</div>
+                            <div><strong>CURP:</strong> ${obtenerValorCampoEstricto(al, ['curp'])}</div>
+                            <div><strong>GRADO:</strong> ${obtenerValorCampoEstricto(al, ['nivel'])} - ${obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado'])}</div>
                         </div>
                         <div style="text-align: left; background: #ebf8ff; padding: 4px; border-radius: 4px; margin-top: 5px; font-size: 0.7rem;">
-                            <strong>Escuela:</strong> ${obtenerValorCampo(al, ['nombre de la escuela', 'escuela'])}<br>
-                            <strong>Apoyo:</strong> ${obtenerValorCampo(al, ['maestro(a) de apoyo', 'apoyo'])}
+                            <strong>Escuela:</strong> ${obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela'])}<br>
+                            <strong>Apoyo:</strong> ${obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo'])}
                         </div>
                     </div>
                 `;
@@ -1153,24 +1205,24 @@
         function exportarExcel() {
             const data = dbAlumnos.map((al, idx) => ({
                 "NP": idx + 1,
-                "Zona": obtenerValorCampo(al, ['zona']),
-                "Centro": obtenerValorCampo(al, ['centro']),
-                "Clave": obtenerValorCampo(al, ['clave']),
-                "Nivel": obtenerValorCampo(al, ['nivel']),
-                "Grado/Taller": obtenerValorCampo(al, ['grado/taller', 'grado']),
-                "Nombre del alumno": obtenerValorCampo(al, ['nombre del alumno', 'nombre']),
-                "CURP": obtenerValorCampo(al, ['curp']),
-                "Sexo": obtenerValorCampo(al, ['sexo']),
-                "D": obtenerValorCampo(al, ['d']),
-                "M": obtenerValorCampo(al, ['m']),
-                "A": obtenerValorCampo(al, ['a']),
-                "I": obtenerValorCampo(al, ['i']),
-                "F": obtenerValorCampo(al, ['f']),
-                "Condición": obtenerValorCampo(al, ['condicion']),
-                "S.F": obtenerValorCampo(al, ['s.f']),
-                "P/NP": obtenerValorCampo(al, ['p/np']),
-                "Nombre de la Escuela": obtenerValorCampo(al, ['nombre de la escuela', 'escuela']),
-                "Maestro(a) de Apoyo": obtenerValorCampo(al, ['nombre de la escuela', 'apoyo'])
+                "Zona": obtenerValorCampoEstricto(al, ['zona']),
+                "Centro": obtenerValorCampoEstricto(al, ['centro']),
+                "Clave": obtenerValorCampoEstricto(al, ['clave']),
+                "Nivel": obtenerValorCampoEstricto(al, ['nivel']),
+                "Grado/Taller": obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado']),
+                "Nombre del alumno": obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre']),
+                "CURP": obtenerValorCampoEstricto(al, ['curp']),
+                "Sexo": obtenerValorCampoEstricto(al, ['sexo']),
+                "D": obtenerValorCampoEstricto(al, ['d']),
+                "M": obtenerValorCampoEstricto(al, ['m']),
+                "A": obtenerValorCampoEstricto(al, ['a']),
+                "I": obtenerValorCampoEstricto(al, ['i']),
+                "F": obtenerValorCampoEstricto(al, ['f']),
+                "Condición": obtenerValorCampoEstricto(al, ['condicion', 'condición']),
+                "S.F": obtenerValorCampoEstricto(al, ['s.f', 'sf']),
+                "P/NP": obtenerValorCampoEstricto(al, ['p/np', 'pnp']),
+                "Nombre de la Escuela": obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela']),
+                "Maestro(a) de Apoyo": obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'maestro de apoyo', 'apoyo'])
             }));
 
             const ws = XLSX.utils.json_to_sheet(data);
