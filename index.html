@@ -354,7 +354,7 @@
         <div class="header-title">EDUCACIÓN ESPECIAL REGIÓN LAGUNA</div>
         <div class="header-controls" id="sessionHeaderControls" style="display: none;">
             <span class="user-badge" id="userRoleBadge">Iniciando...</span>
-            <button class="btn-theme" onclick="toggleTema()" title="Cambiar Modo Claro/Oscuro">🌙 Tema</button>
+            <button class="btn-theme" onclick="toggleTema()" title="Cambiar Modo Claro/Oscuro">🌙</button>
             <button class="btn-logout" onclick="cerrarSesion()">🚪 Salir</button>
         </div>
     </div>
@@ -790,14 +790,12 @@
         function obtenerValorCampoEstricto(obj, posiblesNombres) {
             if (!obj) return '';
             const llaves = Object.keys(obj);
+            const normalizar = (txt) => txt.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
             
             for (let nombre of posiblesNombres) {
-                const limpiaN = nombre.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
-                const llaveExacta = llaves.find(k => {
-                    const limpiaK = k.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ');
-                    return limpiaK === limpiaN;
-                });
-                if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta] !== '') {
+                const limpiaN = normalizar(nombre);
+                const llaveExacta = llaves.find(k => normalizar(k) === limpiaN);
+                if (llaveExacta && obj[llaveExacta] !== undefined && obj[llaveExacta] !== null && obj[llaveExacta].toString().trim() !== '') {
                     const valorStr = obj[llaveExacta].toString().trim();
                     if (limpiaN.includes('fecha') || limpiaN.includes('nacimiento') || limpiaN.includes('promocion') || limpiaN.includes('ingreso')) {
                         return formatearFecha(valorStr);
@@ -805,6 +803,15 @@
                     return valorStr;
                 }
             }
+
+            // Respaldo flexible para Maestro(a) de Apoyo sin importar paréntesis, diagonales o espacios
+            if (posiblesNombres.some(n => normalizar(n).includes('apoyo'))) {
+                const llaveApoyo = llaves.find(k => normalizar(k).includes('apoyo'));
+                if (llaveApoyo && obj[llaveApoyo] !== undefined && obj[llaveApoyo] !== null && obj[llaveApoyo].toString().trim() !== '') {
+                    return obj[llaveApoyo].toString().trim();
+                }
+            }
+
             return '';
         }
 
@@ -1182,8 +1189,8 @@
                 "Sexo": obtenerValorCampoEstricto(al, ['sexo']),
                 "D": obtenerValorCampoEstricto(al, ['d']),
                 "M": obtenerValorCampoEstricto(al, ['m']),
-                "A": obtenerValorCampo(al, ['a']),
-                "I": obtenerValorCampo(al, ['i']),
+                "A": obtenerValorCampoEstricto(al, ['a']),
+                "I": obtenerValorCampoEstricto(al, ['i']),
                 "F": obtenerValorCampoEstricto(al, ['f']),
                 "Condición": obtenerValorCampoEstricto(al, ['condicion', 'condición']),
                 "S.F": obtenerValorCampoEstricto(al, ['s.f', 'sf']),
