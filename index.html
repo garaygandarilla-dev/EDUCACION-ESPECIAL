@@ -302,49 +302,107 @@
             .modal-footer { flex-direction: row; justify-content: flex-end; }
         }
 
+        /* TAMAÑO OFICIAL DE CREDENCIAL (8.6 cm x 5.4 cm aprox.) */
         .credencial-preview {
-            border: 2px solid #1a365d;
-            border-radius: 10px;
-            padding: 15px;
-            background: #fff;
-            color: #333;
+            border: 1.5px solid #1a365d;
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: #ffffff;
+            color: #1a202c;
+            width: 8.6cm;
             max-width: 100%;
+            min-height: 5.4cm;
             margin: 0 auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         .credencial-header {
-            background: #1a365d;
-            color: white;
-            padding: 8px;
+            background: #1a365d !important;
+            color: #ffffff !important;
+            padding: 5px 6px;
             border-radius: 6px 6px 0 0;
-            margin: -15px -15px 12px -15px;
+            margin: -8px -10px 6px -10px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .batch-grid-print {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
             padding: 5px;
-        }
-        @media (min-width: 768px) {
-            .batch-grid-print { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media print {
-            * { visibility: hidden !important; }
+            * {
+                visibility: hidden !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
             #fichaModal, #fichaModal *, .credencial-preview, .credencial-preview *, .batch-grid-print, .batch-grid-print * {
                 visibility: visible !important;
             }
-            body, html { background: white !important; height: 100% !important; overflow: hidden !important; }
-            #fichaModal {
-                position: fixed !important; left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; background: white !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 99999 !important;
+            body, html {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            .modal-card { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; height: auto !important; background: white !important; }
-            .modal-body { overflow: visible !important; background: white !important; padding: 0 !important; }
-            .modal-header, .modal-footer { display: none !important; }
-            .credencial-preview { margin: 0 auto !important; box-shadow: none !important; border: 2px solid #1a365d !important; }
-            .batch-grid-print { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            #fichaModal {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
+                display: block !important;
+                padding: 10mm !important;
+                z-index: 99999 !important;
+            }
+            .modal-card {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                background: white !important;
+                overflow: visible !important;
+            }
+            .modal-body {
+                overflow: visible !important;
+                background: white !important;
+                padding: 0 !important;
+            }
+            .modal-header, .modal-footer {
+                display: none !important;
+            }
+            .credencial-preview {
+                width: 8.6cm !important;
+                min-width: 8.6cm !important;
+                max-width: 8.6cm !important;
+                min-height: 5.4cm !important;
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border: 1.5px solid #1a365d !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .batch-grid-print {
+                display: grid !important;
+                grid-template-columns: repeat(2, 8.6cm) !important;
+                justify-content: center !important;
+                gap: 8mm !important;
+            }
+            .batch-grid-print .credencial-preview {
+                margin: 0 !important;
+            }
         }
     </style>
 </head>
@@ -804,7 +862,6 @@
                 }
             }
 
-            // Respaldo flexible para Maestro(a) de Apoyo sin importar paréntesis, diagonales o espacios
             if (posiblesNombres.some(n => normalizar(n).includes('apoyo'))) {
                 const llaveApoyo = llaves.find(k => normalizar(k).includes('apoyo'));
                 if (llaveApoyo && obj[llaveApoyo] !== undefined && obj[llaveApoyo] !== null && obj[llaveApoyo].toString().trim() !== '') {
@@ -992,44 +1049,47 @@
             tbody.innerHTML = htmlAcumulado;
         }
 
-        function abrirFichaAlumno(alJson) {
-            const al = JSON.parse(alJson);
-            registroSeleccionadoActual = { tipo: 'Alumno', data: al };
-
-            document.getElementById('modalTitulo').textContent = "Credencial del Alumno";
-            document.getElementById('modalFooterButtons').style.display = 'flex';
-            
-            const html = `
+        function generarHtmlCredencial(al) {
+            return `
                 <div class="credencial-preview">
                     <div class="credencial-header">
-                        <h4 style="font-size: 0.8rem;">SECRETARÍA DE EDUCACIÓN DE DURANGO</h4>
-                        <h5 style="font-size: 0.7rem; font-weight: normal; margin-top: 2px;">USAER - CREDENCIAL</h5>
+                        <div style="font-size: 0.62rem; font-weight: bold; letter-spacing: 0.3px;">SECRETARÍA DE EDUCACIÓN DEL ESTADO DE DURANGO</div>
+                        <div style="font-size: 0.56rem; opacity: 0.9;">EDUCACIÓN ESPECIAL - CREDENCIAL ESCOLAR</div>
                     </div>
-                    <div style="margin-bottom: 12px;">
-                        <div style="font-size: 0.7rem; color: #718096; font-weight: bold;">ALUMNO(A)</div>
-                        <div style="font-size: 1rem; color: #1a365d; font-weight: bold; margin-top: 2px;">${obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
+                    <div style="margin-bottom: 5px;">
+                        <div style="font-size: 0.52rem; color: #718096; font-weight: bold; text-transform: uppercase;">ALUMNO(A)</div>
+                        <div style="font-size: 0.78rem; color: #1a365d; font-weight: bold; line-height: 1.15;">${obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; text-align: left; background: #f7fafc; padding: 6px; border-radius: 6px; font-size: 0.75rem;">
+                    <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 4px; margin-bottom: 5px; text-align: left; background: #f7fafc; padding: 4px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.58rem;">
                         <div>
-                            <div style="color: #718096; font-weight: bold;">CURP</div>
-                            <div style="font-weight: 600;">${obtenerValorCampoEstricto(al, ['curp'])}</div>
+                            <div style="color: #718096; font-weight: bold; font-size: 0.5rem;">CURP</div>
+                            <div style="font-weight: 700;">${obtenerValorCampoEstricto(al, ['curp'])}</div>
                         </div>
                         <div>
-                            <div style="color: #718096; font-weight: bold;">GRADO</div>
-                            <div style="font-weight: 600;">${obtenerValorCampoEstricto(al, ['nivel'])} - ${obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado', 'taller'])}</div>
+                            <div style="color: #718096; font-weight: bold; font-size: 0.5rem;">NIVEL / GRADO</div>
+                            <div style="font-weight: 700;">${obtenerValorCampoEstricto(al, ['nivel'])} - ${obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado', 'taller'])}</div>
                         </div>
                     </div>
-                    <div style="text-align: left; background: #ebf8ff; padding: 6px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem;">
-                        <strong>Escuela:</strong> ${obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela'])}<br>
-                        <strong>Centro:</strong> ${obtenerValorCampoEstricto(al, ['centro'])} (${obtenerValorCampoEstricto(al, ['zona'])})<br>
-                        <strong>Apoyo:</strong> ${obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'apoyo'])}
+                    <div style="text-align: left; background: #ebf8ff; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; font-size: 0.56rem; line-height: 1.25;">
+                        <div><strong>Escuela:</strong> ${obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela'])}</div>
+                        <div><strong>Centro:</strong> ${obtenerValorCampoEstricto(al, ['centro'])} (${obtenerValorCampoEstricto(al, ['zona'])})</div>
+                        <div><strong>Apoyo:</strong> ${obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'apoyo'])}</div>
                     </div>
-                    <div style="font-size: 0.7rem; color: #e53e3e; font-weight: bold;">
+                    <div style="font-size: 0.58rem; color: #c53030; font-weight: bold; border-top: 1px dashed #cbd5e0; padding-top: 3px;">
                         CONDICIÓN: ${obtenerValorCampoEstricto(al, ['condicion', 'condición', 'diagnostico', 'diagnóstico']) || 'REGULAR'}
                     </div>
                 </div>
             `;
-            document.getElementById('modalContenidoFicha').innerHTML = html;
+        }
+
+        function abrirFichaAlumno(alJson) {
+            const al = JSON.parse(alJson);
+            registroSeleccionadoActual = { tipo: 'Alumno', data: al };
+
+            document.getElementById('modalTitulo').textContent = "Credencial del Alumno (8.6 × 5.4 cm)";
+            document.getElementById('modalFooterButtons').style.display = 'flex';
+            
+            document.getElementById('modalContenidoFicha').innerHTML = generarHtmlCredencial(al);
             document.getElementById('fichaModal').style.display = 'flex';
         }
 
@@ -1139,26 +1199,7 @@
 
             let credencialesHtml = '<div class="batch-grid-print">';
             lista.slice(0, 10).forEach(al => {
-                credencialesHtml += `
-                    <div class="credencial-preview" style="margin-bottom: 10px;">
-                        <div class="credencial-header" style="padding: 6px;">
-                            <h4 style="font-size: 0.7rem;">SECRETARÍA DE EDUCACIÓN DE DURANGO</h4>
-                            <h5 style="font-size: 0.6rem; font-weight: normal;">USAER - CREDENCIAL</h5>
-                        </div>
-                        <div style="margin-bottom: 6px;">
-                            <div style="font-size: 0.6rem; color: #718096; font-weight: bold;">ALUMNO(A)</div>
-                            <div style="font-size: 0.85rem; color: #1a365d; font-weight: bold;">${obtenerValorCampoEstricto(al, ['nombre del alumno', 'nombre', 'alumno'])}</div>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.65rem; text-align: left; background: #f7fafc; padding: 4px; border-radius: 4px;">
-                            <div><strong>CURP:</strong> ${obtenerValorCampoEstricto(al, ['curp'])}</div>
-                            <div><strong>GRADO:</strong> ${obtenerValorCampoEstricto(al, ['nivel'])} - ${obtenerValorCampoEstricto(al, ['grado/taller', 'grado/t', 'grado'])}</div>
-                        </div>
-                        <div style="text-align: left; background: #ebf8ff; padding: 4px; border-radius: 4px; margin-top: 4px; font-size: 0.65rem;">
-                            <strong>Escuela:</strong> ${obtenerValorCampoEstricto(al, ['nombre de la escuela', 'escuela'])}<br>
-                            <strong>Apoyo:</strong> ${obtenerValorCampoEstricto(al, ['maestro(a) de apoyo', 'apoyo'])}
-                        </div>
-                    </div>
-                `;
+                credencialesHtml += generarHtmlCredencial(al);
             });
             credencialesHtml += '</div>';
 
