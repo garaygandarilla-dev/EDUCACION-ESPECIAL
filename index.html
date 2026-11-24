@@ -395,12 +395,37 @@
         .constancia-nota-edicion {
             background: #ebf8ff;
             color: #2b6cb0;
-            padding: 7px 10px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 0.78rem;
             margin-bottom: 10px;
             border: 1px solid #bee3f8;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
             text-align: center;
+        }
+        .corte-control-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: #ffffff;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #90cdf4;
+            color: #1a365d;
+        }
+        .corte-control-bar input[type="date"] {
+            padding: 3px 6px;
+            border: 1px solid #3182ce;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #1a365d;
+            background: #f7fafc;
+            font-size: 0.8rem;
         }
 
         #printSoloCredencial {
@@ -698,6 +723,7 @@
         let timerAlumnos = null;
         let timerPersonal = null;
         let registroSeleccionadoActual = null;
+        let fechasConstanciaActual = { fechaBaseFuncion: '', fechaBaseCategoria: '' };
 
         window.onload = function() {
             localStorage.removeItem('usaer_alumnos');
@@ -1281,6 +1307,16 @@
             return prefijo || num || '';
         }
 
+        function obtenerProximo16AgostoISO() {
+            const hoy = new Date();
+            let anioCorte = hoy.getFullYear();
+            // Si ya pasó el 16 de agosto del año en curso, sugiere automáticamente el 16 de agosto del siguiente año
+            if (hoy.getMonth() > 7 || (hoy.getMonth() === 7 && hoy.getDate() > 16)) {
+                anioCorte++;
+            }
+            return `${anioCorte}-08-16`;
+        }
+
         function parsearFechaFlexible(fechaStr) {
             if (!fechaStr) return null;
             const limpia = formatearFecha(fechaStr);
@@ -1297,12 +1333,14 @@
             return null;
         }
 
-        function calcularAntiguedadAl16Agosto(fechaStr, anioCorte = 2026) {
-            const inicio = parsearFechaFlexible(fechaStr);
-            if (!inicio) return '00 AÑOS, 00 MESES, 00 DÍAS';
+        function calcularAntiguedadConCorte(fechaInicioStr, fechaCorteISO) {
+            const inicio = parsearFechaFlexible(fechaInicioStr);
+            if (!inicio || !fechaCorteISO) return '00 AÑOS, 00 MESES, 00 DÍAS';
 
-            const corte = new Date(anioCorte, 7, 16); // 16 de agosto (mes 7 en JS)
-            if (inicio > corte) return '00 AÑOS, 00 MESES, 00 DÍAS';
+            const [aFin, mFin, dFin] = fechaCorteISO.split('-').map(Number);
+            const corte = new Date(aFin, mFin - 1, dFin);
+
+            if (isNaN(corte.getTime()) || inicio > corte) return '00 AÑOS, 00 MESES, 00 DÍAS';
 
             let anios = corte.getFullYear() - inicio.getFullYear();
             let meses = corte.getMonth() - inicio.getMonth();
@@ -1319,6 +1357,22 @@
             }
 
             return `${String(anios).padStart(2, '0')} AÑOS, ${String(meses).padStart(2, '0')} MESES, ${String(dias).padStart(2, '0')} DÍAS`;
+        }
+
+        function recalcularAntiguedadesConstancia() {
+            const inputCorte = document.getElementById('selectorFechaCorteConstancia');
+            if (!inputCorte || !inputCorte.value) return;
+
+            const fechaCorteISO = inputCorte.value;
+            const celdaAntFuncion = document.getElementById('celdaAntiguedadFuncion');
+            const celdaAntCategoria = document.getElementById('celdaAntiguedadCategoria');
+
+            if (celdaAntFuncion) {
+                celdaAntFuncion.textContent = calcularAntiguedadConCorte(fechasConstanciaActual.fechaBaseFuncion, fechaCorteISO);
+            }
+            if (celdaAntCategoria) {
+                celdaAntCategoria.textContent = calcularAntiguedadConCorte(fechasConstanciaActual.fechaBaseCategoria, fechaCorteISO);
+            }
         }
 
         function obtenerFechaActualLarga() {
@@ -1359,7 +1413,6 @@
 
             const funcion = obtenerValorCampoEstricto(p, ['funcion', 'función']) || 'DOCENTE DE EDUCACIÓN ESPECIAL';
 
-            // Buscar fechas de ingreso a la SEP, promoción o función en el registro o en sus plazas
             const fechaIngresoSep = obtenerValorCampoEstricto(p, [
                 'fecha de ingreso a la sep', 'ingreso sep', 'fecha ingreso sep',
                 'fecha de ingreso', 'fecha ingreso', 'ingreso'
@@ -1374,13 +1427,15 @@
                 'fecha en la categoría', 'fecha en la categoria', 'fecha de categoría', 'fecha de categoria', 'fecha categoría', 'fecha categoria'
             ]) || '';
 
-            // Antigüedad en la función: prioriza fecha de promoción/función y si no existe usa fecha de ingreso a la SEP
             const fechaBaseFuncion = fechaPromocion || fechaIngresoSep;
-            // Antigüedad en la categoría: prioriza fecha de categoría/ingreso a la SEP y si no existe usa fecha de promoción
             const fechaBaseCategoria = fechaCategoria || fechaIngresoSep || fechaPromocion;
 
-            const antFuncion = calcularAntiguedadAl16Agosto(fechaBaseFuncion, 2026);
-            const antCategoria = calcularAntiguedadAl16Agosto(fechaBaseCategoria, 2026);
+            fechasConstanciaActual = { fechaBaseFuncion, fechaBaseCategoria };
+            const fechaCorteDefectoISO = obtenerProximo16AgostoISO();
+            const anioCiclo = parseInt(fechaCorteDefectoISO.split('-')[0], 10);
+
+            const antFuncion = calcularAntiguedadConCorte(fechaBaseFuncion, fechaCorteDefectoISO);
+            const antCategoria = calcularAntiguedadConCorte(fechaBaseCategoria, fechaCorteDefectoISO);
 
             const centroTexto = obtenerValorCampoEstricto(p, ['clave cct', 'cct', 'clave del centro', 'nombre del centro', 'centro de trabajo', 'centro']);
             const sostenimientoRaw = obtenerValorCampoEstricto(p, ['sostenimiento', 'nombramiento / plaza', 'nombramiento']);
@@ -1391,11 +1446,16 @@
 
             const html = `
                 <div class="constancia-nota-edicion">
-                    💡 <strong>Listo para Word:</strong> Antigüedades calculadas al 16 de agosto (Ingreso SEP: <strong>${fechaIngresoSep || 'Sin dato'}</strong> | Promoción: <strong>${fechaPromocion || 'Sin dato'}</strong>). Puedes editar cualquier celda con un clic y presionar <strong>📋 Copiar para Word</strong>.
+                    <div class="corte-control-bar">
+                        <label for="selectorFechaCorteConstancia"><strong>📅 Fecha de corte para antigüedad:</strong></label>
+                        <input type="date" id="selectorFechaCorteConstancia" value="${fechaCorteDefectoISO}" onchange="recalcularAntiguedadesConstancia()">
+                        <span style="font-size: 0.75rem; color: #4a5568;">(Ingreso SEP: <strong>${fechaIngresoSep || 'Sin dato'}</strong> | Promoción: <strong>${fechaPromocion || 'Sin dato'}</strong>)</span>
+                    </div>
+                    <div>💡 Puedes editar cualquier celda con un clic y presionar <strong>📋 Copiar para Word</strong> para pegarla con su tabla exacta.</div>
                 </div>
                 <div id="constanciaDocumentoWord" class="constancia-sheet" style="font-family: Arial, sans-serif; color: #000000; background: #ffffff;">
                     <p style="text-align: center; font-weight: bold; font-size: 12pt; margin: 0 0 12pt 0; text-transform: uppercase;" contenteditable="true">
-                        CONSTANCIA PARA EL PROCESO DE AUTORIZACIÓN DE CAMBIOS DE CENTRO DE TRABAJO CICLO 2026-2027
+                        CONSTANCIA PARA EL PROCESO DE AUTORIZACIÓN DE CAMBIOS DE CENTRO DE TRABAJO CICLO ${anioCiclo}-${anioCiclo + 1}
                     </p>
                     <p style="margin: 0 0 10pt 0; font-size: 10.5pt; text-align: justify;">
                         <strong>A quien corresponda:</strong><br><br>
@@ -1438,11 +1498,11 @@
                             </tr>
                             <tr>
                                 <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ANTIGÜEDAD EN LA FUNCIÓN CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
-                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antFuncion}</td>
+                                <td id="celdaAntiguedadFuncion" class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antFuncion}</td>
                             </tr>
                             <tr>
                                 <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ANTIGÜEDAD EN LA CATEGORIA CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
-                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antCategoria}</td>
+                                <td id="celdaAntiguedadCategoria" class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antCategoria}</td>
                             </tr>
                             <tr>
                                 <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ASIGNATURA QUE IMPARTE</td>
@@ -1484,7 +1544,7 @@
                     </table>
 
                     <p style="margin: 10pt 0 14pt 0; font-size: 10.5pt; text-align: justify;" contenteditable="true">
-                        Se extiende la presente CONSTANCIA para participar en el Proceso de autorización de cambios de centro de trabajo ciclo escolar 2026-2027, a petición de la persona interesada y para los fines legales que haya lugar.
+                        Se extiende la presente CONSTANCIA para participar en el Proceso de autorización de cambios de centro de trabajo ciclo escolar ${anioCiclo}-${anioCiclo + 1}, a petición de la persona interesada y para los fines legales que haya lugar.
                     </p>
 
                     <div style="text-align: center; font-weight: bold; font-size: 10.5pt; margin-top: 16pt;">
@@ -1647,5 +1707,6 @@
     </script>
 </body>
 </html>
+
 
 
