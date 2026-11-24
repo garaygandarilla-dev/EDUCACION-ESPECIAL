@@ -151,6 +151,7 @@
         .btn-sync { background-color: #805ad5; color: white; }
         .btn-batch { background-color: #d69e2e; color: white; }
         .btn-constancia { background-color: #2b6cb0; color: white; }
+        .btn-word { background-color: #2b579a; color: white; }
         
         .sync-status {
             display: inline-block;
@@ -341,14 +342,14 @@
             padding: 5px;
         }
 
-        /* FORMATO DE CONSTANCIA OFICIAL RECURSOS HUMANOS (SIN LOGOS) */
+        /* FORMATO EXACTO DEL PDF DE RECURSOS HUMANOS (SIN LOGOS Y LISTO PARA COPIAR A WORD) */
         .constancia-sheet {
             background: #ffffff;
             color: #000000;
             width: 100%;
             max-width: 21.59cm;
             margin: 0 auto;
-            padding: 16px 22px;
+            padding: 18px 24px;
             border: 1px solid #cbd5e0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             font-family: Arial, Helvetica, sans-serif;
@@ -360,7 +361,7 @@
             text-align: center;
             font-weight: bold;
             font-size: 12px;
-            margin: 6px 0 12px 0;
+            margin: 4px 0 12px 0;
             text-transform: uppercase;
         }
         .constancia-intro {
@@ -386,13 +387,12 @@
             vertical-align: middle;
         }
         .constancia-tabla td.campo-etiqueta {
-            width: 48%;
+            width: 50%;
             font-weight: bold;
             text-transform: uppercase;
-            background-color: #f8fafc !important;
         }
         .constancia-tabla td.campo-valor {
-            width: 52%;
+            width: 50%;
             font-weight: bold;
             text-transform: uppercase;
         }
@@ -407,9 +407,9 @@
         .constancia-nota-edicion {
             background: #ebf8ff;
             color: #2b6cb0;
-            padding: 6px 10px;
+            padding: 7px 10px;
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             margin-bottom: 10px;
             border: 1px solid #bee3f8;
             text-align: center;
@@ -427,11 +427,10 @@
         }
         .constancia-pie {
             margin-top: 16px;
-            border-top: 1px solid #000000;
             padding-top: 4px;
             font-size: 9px;
             text-align: left;
-            color: #222222;
+            color: #000000;
         }
 
         #printSoloCredencial {
@@ -706,6 +705,7 @@
             </div>
             <div class="modal-footer" id="modalFooterButtons">
                 <button class="btn btn-constancia" id="btnGenerarConstancia" type="button" style="display: none;" onclick="mostrarConstanciaDocente()">📄 Constancia</button>
+                <button class="btn btn-word" id="btnCopiarWord" type="button" style="display: none;" onclick="copiarConstanciaParaWord()">📋 Copiar para Word</button>
                 <button class="btn" id="btnVolverFicha" type="button" style="display: none; background:#718096; color:white;" onclick="volverAFichaPersonal()">⬅️ Volver a Ficha</button>
                 <button class="btn btn-primary" type="button" onclick="imprimirCredencialAislada()">🖨️ Imprimir / PDF</button>
                 <button class="btn" type="button" style="background:#e2e8f0; color:#2d3748;" onclick="cerrarFichaModalDirecto()">Cerrar</button>
@@ -1189,6 +1189,7 @@
             document.getElementById('modalTitulo').textContent = "Credencial del Alumno (8.6 × 5.4 cm)";
             document.getElementById('modalFooterButtons').style.display = 'flex';
             document.getElementById('btnGenerarConstancia').style.display = 'none';
+            document.getElementById('btnCopiarWord').style.display = 'none';
             document.getElementById('btnVolverFicha').style.display = 'none';
             
             document.getElementById('modalContenidoFicha').innerHTML = generarHtmlCredencial(al);
@@ -1217,6 +1218,7 @@
             document.getElementById('modalTitulo').textContent = "Ficha y Plazas";
             document.getElementById('modalFooterButtons').style.display = 'flex';
             document.getElementById('btnGenerarConstancia').style.display = 'inline-block';
+            document.getElementById('btnCopiarWord').style.display = 'none';
             document.getElementById('btnVolverFicha').style.display = 'none';
             
             const nombreCompleto = `${obtenerValorCampoEstricto(p, ['nombre(s)', 'nombres', 'nombre'])} ${obtenerValorCampoEstricto(p, ['apellido paterno', 'paterno'])} ${obtenerValorCampoEstricto(p, ['apellido materno', 'materno'])}`;
@@ -1309,6 +1311,34 @@
             return prefijo || num || '';
         }
 
+        function calcularAntiguedadAl16Agosto(fechaStr) {
+            if (!fechaStr) return '00 AÑOS, 00 MESES, 00 DÍAS';
+            const partes = fechaStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (!partes) return '00 AÑOS, 00 MESES, 00 DÍAS';
+
+            const inicio = new Date(parseInt(partes[3], 10), parseInt(partes[2], 10) - 1, parseInt(partes[1], 10));
+            const anioCorte = new Date().getFullYear();
+            const corte = new Date(anioCorte, 7, 16); // 16 de agosto (mes 7 en JS)
+
+            if (isNaN(inicio.getTime()) || inicio > corte) return '00 AÑOS, 00 MESES, 00 DÍAS';
+
+            let anios = corte.getFullYear() - inicio.getFullYear();
+            let meses = corte.getMonth() - inicio.getMonth();
+            let dias = corte.getDate() - inicio.getDate();
+
+            if (dias < 0) {
+                meses--;
+                const ultimoDiaMesAnterior = new Date(corte.getFullYear(), corte.getMonth(), 0).getDate();
+                dias += ultimoDiaMesAnterior;
+            }
+            if (meses < 0) {
+                anios--;
+                meses += 12;
+            }
+
+            return `${String(anios).padStart(2, '0')} AÑOS, ${String(meses).padStart(2, '0')} MESES, ${String(dias).padStart(2, '0')} DÍAS`;
+        }
+
         function obtenerFechaActualLarga() {
             const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
             const hoy = new Date();
@@ -1326,6 +1356,7 @@
 
             document.getElementById('modalTitulo').textContent = "Constancia de Recursos Humanos";
             document.getElementById('btnGenerarConstancia').style.display = 'none';
+            document.getElementById('btnCopiarWord').style.display = 'inline-block';
             document.getElementById('btnVolverFicha').style.display = 'inline-block';
 
             const curp = obtenerValorCampoEstricto(p, ['clave curp', 'curp']).toUpperCase();
@@ -1345,6 +1376,11 @@
             const totalHorasBase = horasNumericas > 0 ? `${horasNumericas} HORAS` : 'JORNADA';
 
             const funcion = obtenerValorCampoEstricto(p, ['funcion', 'función']) || 'DOCENTE DE EDUCACIÓN ESPECIAL';
+            const fechaIngreso = obtenerValorCampoEstricto(p, ['fecha de ingreso']);
+            const fechaPromocion = obtenerValorCampoEstricto(p, ['fecha de promoción', 'fecha de promocion']);
+            const antFuncion = calcularAntiguedadAl16Agosto(fechaPromocion || fechaIngreso);
+            const antCategoria = calcularAntiguedadAl16Agosto(fechaIngreso);
+
             const centroTexto = obtenerValorCampoEstricto(p, ['clave cct', 'cct', 'clave del centro', 'nombre del centro', 'centro de trabajo', 'centro']);
             const sostenimientoRaw = obtenerValorCampoEstricto(p, ['sostenimiento', 'nombramiento / plaza', 'nombramiento']);
             const sostenimiento = sostenimientoRaw.toUpperCase().includes('ESTATAL') ? 'ESTATAL' : 'FEDERAL';
@@ -1354,116 +1390,157 @@
 
             const html = `
                 <div class="constancia-nota-edicion">
-                    💡 <strong>Vista editable:</strong> Haz clic sobre cualquier dato o fecha de la constancia si deseas ajustarlo antes de pulsar <strong>🖨️ Imprimir / PDF</strong>.
+                    💡 <strong>Listo para Word:</strong> Puedes editar cualquier celda con un clic y después presionar <strong>📋 Copiar para Word</strong> para pegarla con su tabla exacta en tu documento de Word.
                 </div>
-                <div class="constancia-sheet">
-                    <div class="constancia-titulo" contenteditable="true">
+                <div id="constanciaDocumentoWord" class="constancia-sheet" style="font-family: Arial, sans-serif; color: #000000; background: #ffffff;">
+                    <p style="text-align: center; font-weight: bold; font-size: 12pt; margin: 0 0 12pt 0; text-transform: uppercase;" contenteditable="true">
                         CONSTANCIA PARA EL PROCESO DE AUTORIZACIÓN DE CAMBIOS DE CENTRO DE TRABAJO CICLO 2026-2027
-                    </div>
-                    <div class="constancia-intro">
+                    </p>
+                    <p style="margin: 0 0 10pt 0; font-size: 10.5pt; text-align: justify;">
                         <strong>A quien corresponda:</strong><br><br>
                         El que suscribe, <span contenteditable="true"><strong>Lic. Irma Azucena Pérez Alanis, Subjefa de Educación Especial</strong></span>, hace constar que el (la) C. <strong contenteditable="true">${nombreCompleto}</strong> se encuentra adscrito(a) a este nivel educativo con la siguiente información:
-                    </div>
+                    </p>
 
-                    <table class="constancia-tabla">
+                    <table class="constancia-tabla" border="1" cellspacing="0" cellpadding="4" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 9.5pt; color: #000000; border: 1px solid #000000;">
                         <tbody>
                             <tr>
-                                <td class="campo-etiqueta">CURP</td>
-                                <td class="campo-valor" contenteditable="true">${curp}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; width: 50%;">CURP</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold; width: 50%;">${curp}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">RFC</td>
-                                <td class="campo-valor" contenteditable="true">${rfc}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">RFC</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${rfc}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">NOMBRE COMPLETO</td>
-                                <td class="campo-valor" contenteditable="true">${nombreCompleto}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">NOMBRE COMPLETO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${nombreCompleto}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">CLAVE (S) PRESUPUESTALES CON NOMBRAMIENTO DEFINITIVO (10 Y 95 SIN TITULAR)</td>
-                                <td class="campo-valor" contenteditable="true">${clavesPresupuestales}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">CLAVE (S) PRESUPUESTALES CON NOMBRAMIENTO DEFINITIVO (10 Y 95 SIN TITULAR)</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${clavesPresupuestales}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">TOTAL, DE HORAS BASE</td>
-                                <td class="campo-valor" contenteditable="true">${totalHorasBase}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">TOTAL, DE HORAS BASE</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${totalHorasBase}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">NÚMERO DE HORAS POR ASIGNATURA</td>
-                                <td class="campo-valor" contenteditable="true">NA</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">NÚMERO DE HORAS POR ASIGNATURA</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">NA</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">CÓDIGO DE NOMBRAMIENTO AUTORIZADO EN CADA PLAZA QUE OSTENTA</td>
-                                <td class="campo-valor" contenteditable="true">${codigosNombramiento}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">CÓDIGO DE NOMBRAMIENTO AUTORIZADO EN CADA PLAZA QUE OSTENTA</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${codigosNombramiento}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">FUNCIÓN QUE REALIZA CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
-                                <td class="campo-valor" contenteditable="true">${funcion}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">FUNCIÓN QUE REALIZA CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${funcion}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">ANTIGÜEDAD EN LA FUNCIÓN CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
-                                <td class="campo-valor" contenteditable="true">00 AÑOS, 00 MESES, 00 DÍAS</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ANTIGÜEDAD EN LA FUNCIÓN CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antFuncion}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">ANTIGÜEDAD EN LA CATEGORÍA CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
-                                <td class="campo-valor" contenteditable="true">00 AÑOS, 00 MESES, 00 DÍAS</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ANTIGÜEDAD EN LA CATEGORIA CON CORTE AL 16 DE AGOSTO DEL PRESENTE AÑO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${antCategoria}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">ASIGNATURA QUE IMPARTE</td>
-                                <td class="campo-valor" contenteditable="true">NA</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ASIGNATURA QUE IMPARTE</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">NA</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">CLAVE DEL CENTRO DE TRABAJO</td>
-                                <td class="campo-valor" contenteditable="true">${centroTexto}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">CLAVE DEL CENTRO DE TRABAJO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${centroTexto}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">ZONA ECONÓMICA</td>
-                                <td class="campo-valor" contenteditable="true">2</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">ZONA ECONÓMICA</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">2</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">SOSTENIMIENTO</td>
-                                <td class="campo-valor" contenteditable="true">${sostenimiento}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">SOSTENIMIENTO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${sostenimiento}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">OSTENTA DOBLE PLAZA DE JORNADA</td>
-                                <td class="campo-valor" contenteditable="true">${doblePlaza}</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">OSTENTA DOBLE PLAZA DE JORNADA</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">${doblePlaza}</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">OSTENTA UNA PLAZA DE JORNADA Y HORAS</td>
-                                <td class="campo-valor" contenteditable="true">NO</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">OSTENTA UNA PLAZA DE JORNADA Y HORAS</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">NO</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">¿CUENTA CON ALGÚN INCENTIVO?, ENÚNCIELO</td>
-                                <td class="campo-valor" contenteditable="true">SIN INCENTIVO</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">¿CUENTA CON ALGÚN INCENTIVO?, ENÚNCIELO</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">SIN INCENTIVO</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">¿CUENTA CON UNA NOTA DESFAVORABLE EN SU EXPEDIENTE?</td>
-                                <td class="campo-valor" contenteditable="true">NO</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">¿CUENTA CON UNA NOTA DESFAVORABLE EN SU EXPEDIENTE?</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">No</td>
                             </tr>
                             <tr>
-                                <td class="campo-etiqueta">OBTUVO UN CAMBIO POR FUERZA MAYOR</td>
-                                <td class="campo-valor" contenteditable="true">NO</td>
+                                <td class="campo-etiqueta" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">OBTUVO UN CAMBIO POR FUERZA MAYOR</td>
+                                <td class="campo-valor" contenteditable="true" style="border: 1px solid #000000; padding: 4px 6px; font-weight: bold;">No</td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <div class="constancia-cierre" contenteditable="true">
+                    <p style="margin: 10pt 0 14pt 0; font-size: 10.5pt; text-align: justify;" contenteditable="true">
                         Se extiende la presente CONSTANCIA para participar en el Proceso de autorización de cambios de centro de trabajo ciclo escolar 2026-2027, a petición de la persona interesada y para los fines legales que haya lugar.
-                    </div>
+                    </p>
 
-                    <div class="constancia-firma">
+                    <div style="text-align: center; font-weight: bold; font-size: 10.5pt; margin-top: 16pt;">
                         <div>ATENTAMENTE</div>
-                        <div contenteditable="true" style="margin-bottom: 34px;">${fechaHoy}</div>
+                        <div contenteditable="true" style="margin-bottom: 32pt;">${fechaHoy}</div>
                         <div contenteditable="true">LIC. IRMA AZUCENA PÉREZ ALANIS</div>
                         <div contenteditable="true">SUBJEFA DE EDUCACIÓN ESPECIAL</div>
                     </div>
 
-                    <div class="constancia-pie" contenteditable="true">
-                        Blvd. San Antonio Esq. Calle San Marcos s/n, Fracc. San Antonio, C.P. 35015 Gómez Palacio, Dgo. &nbsp;|&nbsp; Tel. (871) 456-5319
-                    </div>
+                    <p style="margin-top: 16pt; font-size: 8.5pt; text-align: left;" contenteditable="true">
+                        Blvd. San Antonio Esq. Calle San Marcos s/n, Fracc. San Antonio, C.P. 35015 Gómez Palacio, Dgo.<br>
+                        Tel. (871) 456-5319
+                    </p>
                 </div>
             `;
 
             document.getElementById('modalContenidoFicha').innerHTML = html;
+        }
+
+        async function copiarConstanciaParaWord() {
+            const docEl = document.getElementById('constanciaDocumentoWord');
+            if (!docEl) return;
+
+            const btn = document.getElementById('btnCopiarWord');
+            const textoOriginal = btn.textContent;
+
+            try {
+                const htmlContent = docEl.outerHTML;
+                const plainText = docEl.innerText;
+
+                if (navigator.clipboard && window.ClipboardItem) {
+                    const blobHtml = new Blob([htmlContent], { type: 'text/html' });
+                    const blobText = new Blob([plainText], { type: 'text/plain' });
+                    const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
+                    await navigator.clipboard.write(data);
+                } else {
+                    const range = document.createRange();
+                    range.selectNode(docEl);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    window.getSelection().removeAllRanges();
+                }
+
+                btn.textContent = "✅ ¡Copiado! Pega en Word (Cmd+V)";
+                setTimeout(() => { btn.textContent = textoOriginal; }, 3000);
+            } catch (err) {
+                console.error("Error al copiar para Word:", err);
+                const range = document.createRange();
+                range.selectNode(docEl);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                btn.textContent = "✅ ¡Copiado! Pega en Word";
+                setTimeout(() => { btn.textContent = textoOriginal; }, 3000);
+            }
         }
 
         function imprimirCredencialesLote() {
@@ -1493,6 +1570,7 @@
             document.getElementById('modalContenidoFicha').innerHTML = credencialesHtml;
             document.getElementById('modalFooterButtons').style.display = 'flex';
             document.getElementById('btnGenerarConstancia').style.display = 'none';
+            document.getElementById('btnCopiarWord').style.display = 'none';
             document.getElementById('btnVolverFicha').style.display = 'none';
             document.getElementById('fichaModal').style.display = 'flex';
         }
@@ -1568,3 +1646,4 @@
     </script>
 </body>
 </html>
+
