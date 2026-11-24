@@ -357,18 +357,6 @@
             line-height: 1.3;
             text-align: left;
         }
-        .constancia-titulo {
-            text-align: center;
-            font-weight: bold;
-            font-size: 12px;
-            margin: 4px 0 12px 0;
-            text-transform: uppercase;
-        }
-        .constancia-intro {
-            margin-bottom: 10px;
-            text-align: justify;
-            font-size: 11px;
-        }
         .constancia-tabla {
             width: 100%;
             min-width: 100%;
@@ -413,24 +401,6 @@
             margin-bottom: 10px;
             border: 1px solid #bee3f8;
             text-align: center;
-        }
-        .constancia-cierre {
-            margin-top: 8px;
-            text-align: justify;
-            font-size: 11px;
-        }
-        .constancia-firma {
-            margin-top: 18px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .constancia-pie {
-            margin-top: 16px;
-            padding-top: 4px;
-            font-size: 9px;
-            text-align: left;
-            color: #000000;
         }
 
         #printSoloCredencial {
@@ -1311,16 +1281,28 @@
             return prefijo || num || '';
         }
 
-        function calcularAntiguedadAl16Agosto(fechaStr) {
-            if (!fechaStr) return '00 AÑOS, 00 MESES, 00 DÍAS';
-            const partes = fechaStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-            if (!partes) return '00 AÑOS, 00 MESES, 00 DÍAS';
+        function parsearFechaFlexible(fechaStr) {
+            if (!fechaStr) return null;
+            const limpia = formatearFecha(fechaStr);
+            const partes = limpia.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (partes) {
+                const d = parseInt(partes[1], 10);
+                const m = parseInt(partes[2], 10) - 1;
+                const y = parseInt(partes[3], 10);
+                const fecha = new Date(y, m, d);
+                if (!isNaN(fecha.getTime()) && fecha.getFullYear() === y && fecha.getMonth() === m && fecha.getDate() === d) {
+                    return fecha;
+                }
+            }
+            return null;
+        }
 
-            const inicio = new Date(parseInt(partes[3], 10), parseInt(partes[2], 10) - 1, parseInt(partes[1], 10));
-            const anioCorte = new Date().getFullYear();
+        function calcularAntiguedadAl16Agosto(fechaStr, anioCorte = 2026) {
+            const inicio = parsearFechaFlexible(fechaStr);
+            if (!inicio) return '00 AÑOS, 00 MESES, 00 DÍAS';
+
             const corte = new Date(anioCorte, 7, 16); // 16 de agosto (mes 7 en JS)
-
-            if (isNaN(inicio.getTime()) || inicio > corte) return '00 AÑOS, 00 MESES, 00 DÍAS';
+            if (inicio > corte) return '00 AÑOS, 00 MESES, 00 DÍAS';
 
             let anios = corte.getFullYear() - inicio.getFullYear();
             let meses = corte.getMonth() - inicio.getMonth();
@@ -1376,10 +1358,29 @@
             const totalHorasBase = horasNumericas > 0 ? `${horasNumericas} HORAS` : 'JORNADA';
 
             const funcion = obtenerValorCampoEstricto(p, ['funcion', 'función']) || 'DOCENTE DE EDUCACIÓN ESPECIAL';
-            const fechaIngreso = obtenerValorCampoEstricto(p, ['fecha de ingreso']);
-            const fechaPromocion = obtenerValorCampoEstricto(p, ['fecha de promoción', 'fecha de promocion']);
-            const antFuncion = calcularAntiguedadAl16Agosto(fechaPromocion || fechaIngreso);
-            const antCategoria = calcularAntiguedadAl16Agosto(fechaIngreso);
+
+            // Buscar fechas de ingreso a la SEP, promoción o función en el registro o en sus plazas
+            const fechaIngresoSep = obtenerValorCampoEstricto(p, [
+                'fecha de ingreso a la sep', 'ingreso sep', 'fecha ingreso sep',
+                'fecha de ingreso', 'fecha ingreso', 'ingreso'
+            ]) || plazas.map(pl => obtenerValorCampoEstricto(pl, ['fecha de ingreso a la sep', 'fecha de ingreso'])).find(Boolean) || '';
+
+            const fechaPromocion = obtenerValorCampoEstricto(p, [
+                'fecha de promoción', 'fecha de promocion', 'fecha promoción', 'fecha promocion',
+                'fecha en la función', 'fecha en la funcion', 'fecha de función', 'fecha de funcion', 'promoción', 'promocion'
+            ]) || plazas.map(pl => obtenerValorCampoEstricto(pl, ['fecha de promoción', 'fecha de promocion'])).find(Boolean) || '';
+
+            const fechaCategoria = obtenerValorCampoEstricto(p, [
+                'fecha en la categoría', 'fecha en la categoria', 'fecha de categoría', 'fecha de categoria', 'fecha categoría', 'fecha categoria'
+            ]) || '';
+
+            // Antigüedad en la función: prioriza fecha de promoción/función y si no existe usa fecha de ingreso a la SEP
+            const fechaBaseFuncion = fechaPromocion || fechaIngresoSep;
+            // Antigüedad en la categoría: prioriza fecha de categoría/ingreso a la SEP y si no existe usa fecha de promoción
+            const fechaBaseCategoria = fechaCategoria || fechaIngresoSep || fechaPromocion;
+
+            const antFuncion = calcularAntiguedadAl16Agosto(fechaBaseFuncion, 2026);
+            const antCategoria = calcularAntiguedadAl16Agosto(fechaBaseCategoria, 2026);
 
             const centroTexto = obtenerValorCampoEstricto(p, ['clave cct', 'cct', 'clave del centro', 'nombre del centro', 'centro de trabajo', 'centro']);
             const sostenimientoRaw = obtenerValorCampoEstricto(p, ['sostenimiento', 'nombramiento / plaza', 'nombramiento']);
@@ -1390,7 +1391,7 @@
 
             const html = `
                 <div class="constancia-nota-edicion">
-                    💡 <strong>Listo para Word:</strong> Puedes editar cualquier celda con un clic y después presionar <strong>📋 Copiar para Word</strong> para pegarla con su tabla exacta en tu documento de Word.
+                    💡 <strong>Listo para Word:</strong> Antigüedades calculadas al 16 de agosto (Ingreso SEP: <strong>${fechaIngresoSep || 'Sin dato'}</strong> | Promoción: <strong>${fechaPromocion || 'Sin dato'}</strong>). Puedes editar cualquier celda con un clic y presionar <strong>📋 Copiar para Word</strong>.
                 </div>
                 <div id="constanciaDocumentoWord" class="constancia-sheet" style="font-family: Arial, sans-serif; color: #000000; background: #ffffff;">
                     <p style="text-align: center; font-weight: bold; font-size: 12pt; margin: 0 0 12pt 0; text-transform: uppercase;" contenteditable="true">
@@ -1646,4 +1647,5 @@
     </script>
 </body>
 </html>
+
 
